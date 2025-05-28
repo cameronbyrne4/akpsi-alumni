@@ -11,9 +11,11 @@ export default function Home() {
   const [filteredAlumni, setFilteredAlumni] = useState<Alumni[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState({
-    industry: 'all',
-    familyBranch: 'all',
-    graduationYear: 'all',
+    industry: [] as string[],
+    company: [] as string[],
+    role: [] as string[],
+    city: [] as string[],
+    graduationYear: [2000, 2023] as [number, number],
   })
 
   useEffect(() => {
@@ -50,15 +52,24 @@ export default function Home() {
     }
 
     // Apply filters
-    if (filters.industry && filters.industry !== 'all') {
-      filtered = filtered.filter((a) => a.industry === filters.industry)
+    if (filters.industry.length > 0) {
+      filtered = filtered.filter((a) => filters.industry.includes(a.industry))
     }
-    if (filters.familyBranch && filters.familyBranch !== 'all') {
-      filtered = filtered.filter((a) => a.family_branch === filters.familyBranch)
+    if (filters.company.length > 0) {
+      filtered = filtered.filter((a) =>
+        a.companies.some((company) => filters.company.includes(company))
+      )
     }
-    if (filters.graduationYear && filters.graduationYear !== 'all') {
+    if (filters.role.length > 0) {
+      filtered = filtered.filter((a) => filters.role.includes(a.role))
+    }
+    if (filters.city.length > 0) {
+      filtered = filtered.filter((a) => filters.city.includes(a.location))
+    }
+    if (filters.graduationYear) {
+      const [minYear, maxYear] = filters.graduationYear
       filtered = filtered.filter(
-        (a) => a.graduation_year.toString() === filters.graduationYear
+        (a) => a.graduation_year >= minYear && a.graduation_year <= maxYear
       )
     }
 
@@ -66,9 +77,11 @@ export default function Home() {
   }, [alumni, searchQuery, filters])
 
   const handleFilterChange = (newFilters: {
-    industry?: string
-    familyBranch?: string
-    graduationYear?: string
+    industry?: string[]
+    company?: string[]
+    role?: string[]
+    city?: string[]
+    graduationYear?: [number, number]
   }) => {
     setFilters(prev => ({
       ...prev,
@@ -101,7 +114,7 @@ export default function Home() {
               pictureUrl={alum.picture_url}
               role={alum.role}
               companies={alum.companies}
-              bio={alum.bio}
+              bio={alum.bio || ''}
               familyBranch={alum.family_branch}
               graduationYear={alum.graduation_year}
               location={alum.location}
