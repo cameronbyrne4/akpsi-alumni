@@ -6,12 +6,21 @@ import { SearchFilter } from '@/components/search-filter'
 import { supabase } from '@/lib/supabase'
 import type { Alumni } from '@/lib/supabase'
 import InfiniteScroll from '@/components/ui/infinite-scroll'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 import { AiSearchBar } from '@/components/ai-search-bar'
 import { useLayoutContext } from '@/components/client-layout-shell'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { Typewriter } from '@/components/ui/typewriter'
 
 const PAGE_SIZE = 21;
+
+const examplePrompts = [
+  "People working on the East Coast",
+  "Managers for anything in finance",
+  "Who works at a FAANG company?",
+  "Consultants who graduated over 10 years ago",
+  "Big 4 consultants in Los Angeles",
+];
 
 export default function Home() {
   const [alumni, setAlumni] = useState<Alumni[]>([])
@@ -42,6 +51,15 @@ export default function Home() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [aiLocationCities, setAiLocationCities] = useState<{ label: string; value: string }[]>([])
+  const [aiSelectedFilters, setAiSelectedFilters] = useState({
+    industry: [] as string[],
+    role: [] as string[],
+    city: [] as string[],
+    graduationYear: [2000, 2023] as [number, number],
+  })
+  const [aiInputValue, setAiInputValue] = useState('');
+  const [showPromptPopover, setShowPromptPopover] = useState(false);
+  const promptLinkRef = useRef<HTMLButtonElement>(null);
 
   // If ?manual=1 is present, activate manual search mode
   useEffect(() => {
@@ -146,6 +164,7 @@ export default function Home() {
     setAiLoading(true)
     setAiError(null)
     aiInputRef.current = query
+    setAiInputValue(query)
     try {
       const res = await fetch('/api/ai-search', {
         method: 'POST',
@@ -162,12 +181,25 @@ export default function Home() {
         value: city
       }))
       setAiLocationCities(locationCities)
+
+      // Set the selected filters for the UI
+      setAiSelectedFilters({
+        industry: filters.industry ? [filters.industry] : [],
+        role: filters.role || [],
+        city: filters.location || [],
+        graduationYear: [
+          filters.graduation_year_min || 2000,
+          filters.graduation_year_max || 2023,
+        ],
+      })
+
       // The AI now returns city-level locations, so we can use them directly
       setFilters(prev => ({
         ...prev,
         industry: filters.industry ? [filters.industry] : [],
-        role: filters.role ? [filters.role] : [],
+        role: filters.role || [],
         city: filters.location || [],
+        company: filters.companies || [],
         graduationYear: [
           filters.graduation_year_min || 2000,
           filters.graduation_year_max || 2023,
@@ -201,10 +233,73 @@ export default function Home() {
             Alpha Kappa Psi Alumni Network
           </h1>
           <p className="text-lg text-muted-foreground mb-4 text-center">
-            Connecting brothers across generations
+            Connecting brothers in{' '}
+            <Typewriter
+              phrases={[
+                'technology',
+                'finance',
+                'consulting',
+                'healthcare',
+                'marketing',
+                'entrepreneurship',
+                'operations',
+                'strategy',
+              ]}
+              className="text-primary font-medium underline underline-offset-4"
+            />
           </p>
         </div>
-        <AiSearchBar onSubmit={handleAiSearch} />
+        <AiSearchBar 
+          onSubmit={handleAiSearch} 
+          value={aiInputValue}
+          onChange={setAiInputValue}
+        />
+        {/* Example prompts popover */}
+        <div className="relative flex justify-center mt-2">
+          <button
+            ref={promptLinkRef}
+            className="text-primary underline text-sm hover:text-primary/80 transition"
+            type="button"
+            onClick={() => setShowPromptPopover((v) => !v)}
+          >
+            example prompts
+          </button>
+          {showPromptPopover && (
+            <>
+              {/* Overlay */}
+              <div
+                className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+                onClick={() => setShowPromptPopover(false)}
+                aria-label="Close example prompts popup"
+              />
+              {/* Centered popup */}
+              <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md rounded-lg bg-white shadow-2xl border border-gray-200 p-6 flex flex-col gap-3">
+                <button
+                  className="absolute top-2 right-2 p-1 rounded hover:bg-muted"
+                  onClick={() => setShowPromptPopover(false)}
+                  aria-label="Close"
+                  type="button"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+                <div className="mb-2 font-semibold text-lg text-center">Example Prompts</div>
+                {examplePrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    className="text-left px-3 py-2 rounded hover:bg-primary/10 text-sm text-primary border border-primary/20"
+                    type="button"
+                    onClick={() => {
+                      setAiInputValue(prompt);
+                      setShowPromptPopover(false);
+                    }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
         {!manualSearchMode && !hasSearched && (
           <div className="mt-4 flex justify-center">
             <button
@@ -229,17 +324,39 @@ export default function Home() {
         )}
         {(hasSearched || manualSearchMode) && !aiLoading && (
           <>
-            <div className="mb-8">
+            <div className={manualSearchMode ? "mb-8 mt-8" : "mb-8"}>
               <SearchFilter
                 onSearch={setSearchQuery}
                 onFilterChange={handleFilterChange}
                 additionalCityOptions={aiLocationCities}
+                selectedFilters={aiSelectedFilters}
               />
             </div>
-            <div className="mb-4 flex items-center">
+            <div className="mb-4 flex items-center justify-between">
               {totalCount !== null && (
                 <span className="text-muted-foreground text-base">{totalCount} Results Found</span>
               )}
+              <button
+                onClick={() => {
+                  setFilters({
+                    industry: [],
+                    company: [],
+                    role: [],
+                    city: [],
+                    graduationYear: [2000, 2023],
+                  })
+                  setSearchQuery('')
+                  setAiSelectedFilters({
+                    industry: [],
+                    role: [],
+                    city: [],
+                    graduationYear: [2000, 2023],
+                  })
+                }}
+                className="text-primary hover:text-primary/80 underline text-sm transition"
+              >
+                Clear filters
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {alumni.length === 0 && !loading ? (

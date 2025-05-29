@@ -14,6 +14,12 @@ interface SearchFilterProps {
     graduationYear?: [number, number]
   }) => void
   additionalCityOptions?: { label: string; value: string }[]
+  selectedFilters?: {
+    industry: string[]
+    role: string[]
+    city: string[]
+    graduationYear?: [number, number]
+  }
 }
 
 const industryOptions = [
@@ -50,12 +56,31 @@ const roleOptions = [
   { label: 'Sales Representative', value: 'Sales Representative' },
 ]
 
-export function SearchFilter({ onSearch, onFilterChange, additionalCityOptions = [] }: SearchFilterProps) {
-  const [yearRange, setYearRange] = useState<[number, number]>([2000, 2023])
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([])
+export function SearchFilter({ 
+  onSearch, 
+  onFilterChange, 
+  additionalCityOptions = [],
+  selectedFilters
+}: SearchFilterProps) {
+  const [yearRange, setYearRange] = useState<[number, number]>(
+    selectedFilters?.graduationYear || [2000, 2023]
+  )
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(selectedFilters?.industry || [])
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
-  const [selectedCities, setSelectedCities] = useState<string[]>([])
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(selectedFilters?.role || [])
+  const [selectedCities, setSelectedCities] = useState<string[]>(selectedFilters?.city || [])
+
+  // Update selected filters when they change from props
+  React.useEffect(() => {
+    if (selectedFilters) {
+      setSelectedIndustries(selectedFilters.industry)
+      setSelectedRoles(selectedFilters.role)
+      setSelectedCities(selectedFilters.city)
+      if (selectedFilters.graduationYear) {
+        setYearRange(selectedFilters.graduationYear)
+      }
+    }
+  }, [selectedFilters])
 
   // Combine default city options with additional ones
   const allCityOptions = React.useMemo(() => {
