@@ -119,7 +119,11 @@ export function MultiSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[260px] p-0">
+      <PopoverContent 
+        className="w-[260px] p-0 max-h-[300px] overflow-hidden" 
+        align="start"
+        sideOffset={4}
+      >
         <div className="relative border-b px-3 py-2 flex items-center justify-end">
           <button
             className="p-1 rounded hover:bg-muted"
@@ -130,7 +134,7 @@ export function MultiSelect({
             <X className="h-4 w-4" />
           </button>
         </div>
-        <Command>
+        <Command className="max-h-[200px]">
           <CommandInput
             value={input}
             onValueChange={handleInputChange}
@@ -138,24 +142,26 @@ export function MultiSelect({
             placeholder={`Add ${getArticle(placeholder)} ${placeholder.toLowerCase()}`}
             className="px-3"
           />
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup>
-            {options.map((option) => (
-              <CommandItem
-                key={option.value}
-                onSelect={() => handleSelect(option.value)}
-                className="cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={pending.includes(option.value)}
-                  readOnly
-                  className="mr-2 accent-primary"
-                />
-                {option.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <div className="overflow-y-auto max-h-[150px]">
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  onSelect={() => handleSelect(option.value)}
+                  className="cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={pending.includes(option.value)}
+                    readOnly
+                    className="mr-2 accent-primary"
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </div>
         </Command>
         <div className="flex justify-between border-t px-3 py-2 bg-background">
           <Button variant="ghost" size="sm" onClick={handleCancel} className="hover:bg-muted">
