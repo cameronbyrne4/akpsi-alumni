@@ -32,35 +32,28 @@ export function SideNav({
       {/* Hamburger icon */}
       {!open && (
         <button
-          className="fixed top-4 left-4 z-50 p-2 rounded-full bg-background shadow hover:bg-muted transition"
+          className="fixed top-4 left-4 z-50 p-2 rounded-full bg-secondary hover:bg-secondary/80 transition"
           onClick={onOpen}
           aria-label="Open navigation"
         >
           <Menu className="h-6 w-6" />
         </button>
       )}
-      {/* Overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-          onClick={onClose}
-        />
-      )}
       {/* Side nav */}
       <nav
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-background shadow-lg transform transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-secondary/50 transform transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : '-translate-x-full'}`}
         aria-label="Sidebar"
       >
-        <div className="flex items-center justify-between px-4 py-4 border-b">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-border/50">
           <span className="font-bold text-lg">Menu</span>
-          <button onClick={onClose} aria-label="Close navigation" className="p-1 rounded hover:bg-muted">
+          <button onClick={onClose} aria-label="Close navigation" className="p-1 rounded hover:bg-secondary/80">
             <X className="h-5 w-5" />
           </button>
         </div>
         <ul className="flex flex-col gap-2 p-4">
           <li>
             <button
-              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/' ? 'bg-primary/10 font-semibold' : 'hover:bg-muted'}`}
+              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
               onClick={() => { onManualSearch(); onClose(); }}
             >
               Alumni Search
@@ -68,14 +61,14 @@ export function SideNav({
           </li>
           <li>
             <button
-              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/family-trees' ? 'bg-primary/10 font-semibold' : 'hover:bg-muted'}`}
+              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/family-trees' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
               onClick={() => { onFamilyTrees(); onClose(); }}
             >
               Family Trees
             </button>
           </li>
         </ul>
-        <div className="border-t px-4 pt-4">
+        <div className="border-t border-border/50 px-4 pt-4">
           <div className="font-semibold text-sm mb-2 text-muted-foreground">Previous Searches</div>
           <ul className="flex flex-col gap-1">
             {previousSearches.length === 0 && (
@@ -84,7 +77,7 @@ export function SideNav({
             {previousSearches.map((query, idx) => (
               <li key={idx}>
                 <button
-                  className="w-full text-left px-2 py-1 rounded hover:bg-muted text-sm truncate"
+                  className="w-full text-left px-2 py-1 rounded hover:bg-secondary/80 text-sm truncate"
                   onClick={() => { onSelectPrevious(query); onClose(); }}
                   title={query}
                 >

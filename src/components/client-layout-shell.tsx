@@ -5,19 +5,21 @@ import { usePathname, useRouter } from 'next/navigation'
 
 interface LayoutContextType {
   manualSearchMode: boolean
-  setManualSearchMode: (v: boolean) => void
+  setManualSearchMode: (value: boolean) => void
   previousSearches: string[]
   addPreviousSearch: (query: string) => void
   selectPreviousSearch: (query: string) => void
 }
 
-const LayoutContext = createContext<LayoutContextType | undefined>(undefined)
+const LayoutContext = createContext<LayoutContextType>({
+  manualSearchMode: false,
+  setManualSearchMode: () => {},
+  previousSearches: [],
+  addPreviousSearch: () => {},
+  selectPreviousSearch: () => {},
+})
 
-export function useLayoutContext() {
-  const ctx = useContext(LayoutContext)
-  if (!ctx) throw new Error('useLayoutContext must be used within ClientLayoutShell')
-  return ctx
-}
+export const useLayoutContext = () => useContext(LayoutContext)
 
 export default function ClientLayoutShell({ children }: { children: React.ReactNode }) {
   const [navOpen, setNavOpen] = useState(false)
@@ -66,7 +68,9 @@ export default function ClientLayoutShell({ children }: { children: React.ReactN
         previousSearches={previousSearches}
         onSelectPrevious={selectPreviousSearch}
       />
-      <div className="min-h-screen">{children}</div>
+      <div className={`min-h-screen transition-all duration-300 ease-in-out ${navOpen ? 'ml-64' : 'ml-0'}`}>
+        {children}
+      </div>
     </LayoutContext.Provider>
   )
 }

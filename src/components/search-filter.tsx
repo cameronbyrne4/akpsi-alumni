@@ -134,7 +134,7 @@ export function SearchFilter({
     <div className="space-y-4">
       <Input
         type="search"
-        placeholder="Search by name or title..."
+        placeholder="Direct search by name or title..."
         className="w-full"
         onChange={(e) => onSearch(e.target.value)}
       />
