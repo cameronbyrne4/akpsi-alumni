@@ -2,6 +2,7 @@ import { Input } from '@/components/ui/input'
 import { DualRangeSlider } from '@/components/ui/dual-range-slider'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { useState } from 'react'
+import React from 'react'
 
 interface SearchFilterProps {
   onSearch: (query: string) => void
@@ -12,6 +13,7 @@ interface SearchFilterProps {
     city?: string[]
     graduationYear?: [number, number]
   }) => void
+  additionalCityOptions?: { label: string; value: string }[]
 }
 
 const industryOptions = [
@@ -48,23 +50,34 @@ const roleOptions = [
   { label: 'Sales Representative', value: 'Sales Representative' },
 ]
 
-const cityOptions = [
-  { label: 'New York, NY', value: 'New York, NY' },
-  { label: 'San Francisco, CA', value: 'San Francisco, CA' },
-  { label: 'Seattle, WA', value: 'Seattle, WA' },
-  { label: 'Boston, MA', value: 'Boston, MA' },
-  { label: 'Chicago, IL', value: 'Chicago, IL' },
-  { label: 'Austin, TX', value: 'Austin, TX' },
-  { label: 'Los Angeles, CA', value: 'Los Angeles, CA' },
-  { label: 'Washington DC', value: 'Washington DC' },
-]
-
-export function SearchFilter({ onSearch, onFilterChange }: SearchFilterProps) {
+export function SearchFilter({ onSearch, onFilterChange, additionalCityOptions = [] }: SearchFilterProps) {
   const [yearRange, setYearRange] = useState<[number, number]>([2000, 2023])
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([])
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
   const [selectedCities, setSelectedCities] = useState<string[]>([])
+
+  // Combine default city options with additional ones
+  const allCityOptions = React.useMemo(() => {
+    const defaultOptions = [
+      { label: 'New York, NY', value: 'New York, NY' },
+      { label: 'San Francisco, CA', value: 'San Francisco, CA' },
+      { label: 'Seattle, WA', value: 'Seattle, WA' },
+      { label: 'Boston, MA', value: 'Boston, MA' },
+      { label: 'Chicago, IL', value: 'Chicago, IL' },
+      { label: 'Austin, TX', value: 'Austin, TX' },
+      { label: 'Los Angeles, CA', value: 'Los Angeles, CA' },
+      { label: 'Washington DC', value: 'Washington DC' },
+    ]
+    // Merge additional options, avoiding duplicates
+    const merged = [...defaultOptions]
+    additionalCityOptions.forEach(option => {
+      if (!merged.some(existing => existing.value === option.value)) {
+        merged.push(option)
+      }
+    })
+    return merged
+  }, [additionalCityOptions])
 
   const handleYearChange = (value: number[]) => {
     const newRange = value as [number, number]
@@ -96,7 +109,7 @@ export function SearchFilter({ onSearch, onFilterChange }: SearchFilterProps) {
     <div className="space-y-4">
       <Input
         type="search"
-        placeholder="Search alumni..."
+        placeholder="Search by name or title..."
         className="w-full"
         onChange={(e) => onSearch(e.target.value)}
       />
@@ -123,7 +136,7 @@ export function SearchFilter({ onSearch, onFilterChange }: SearchFilterProps) {
         />
 
         <MultiSelect
-          options={cityOptions}
+          options={allCityOptions}
           selected={selectedCities}
           onChange={handleCityChange}
           placeholder="City"
