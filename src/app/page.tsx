@@ -6,11 +6,13 @@ import { SearchFilter } from '@/components/search-filter'
 import { supabase } from '@/lib/supabase'
 import type { Alumni } from '@/lib/supabase'
 import InfiniteScroll from '@/components/ui/infinite-scroll'
-import { Loader2, X } from 'lucide-react'
+import { Loader2, X, Info } from 'lucide-react'
 import { AiSearchBar } from '@/components/ai-search-bar'
 import { useLayoutContext } from '@/components/client-layout-shell'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Typewriter } from '@/components/ui/typewriter'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
 
 const PAGE_SIZE = 21;
 
@@ -229,9 +231,33 @@ export default function Home() {
     <main className="min-h-screen bg-background flex flex-col">
       <div className={hasSearched || manualSearchMode ? "container mx-auto px-4 py-16" : "flex flex-1 flex-col items-center justify-center"}>
         <div className="flex flex-col items-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-4 text-center">
-            Alpha Kappa Psi Alumni Network
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-4xl font-bold text-primary mb-4 text-center">
+              Alpha Kappa Psi Alumni Network
+            </h1>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="mb-4">
+                  <Info className="h-5 w-5 font-bold" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-3">
+                  <h4 className="font-medium leading-none text-lg">About This Project</h4>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      A search tool to connect with our very cracked alumni for mentorship and career opportunities.
+                    </p>
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium">Credits</p>
+                      <p className="text-sm text-muted-foreground">Cameron Byrne + Parth Mahajan</p>
+                      <p className="text-xs text-muted-foreground mt-1">May 2025</p>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           <p className="text-lg text-muted-foreground mb-4 text-center">
             Connecting brothers in{' '}
             <Typewriter
