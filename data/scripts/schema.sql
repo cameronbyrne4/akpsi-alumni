@@ -11,22 +11,18 @@ CREATE TABLE alumni (
     big_brother TEXT DEFAULT 'Unknown',
     little_brothers TEXT[] DEFAULT ARRAY[]::TEXT[],
     linkedin_url TEXT,
-    picture_url TEXT,
-    bio TEXT DEFAULT 'No bio provided',
     source_sheet TEXT,
     has_linkedin BOOLEAN DEFAULT FALSE,
     scraped BOOLEAN DEFAULT FALSE,
     manually_verified BOOLEAN DEFAULT FALSE,
     data_last_updated DATE DEFAULT CURRENT_DATE,
+    -- Career history stored as JSONB array
+    career_history JSONB[] DEFAULT ARRAY[]::JSONB[],
     -- Multi-value fields stored as arrays
-    companies TEXT[] DEFAULT ARRAY[]::TEXT[],
-    roles TEXT[] DEFAULT ARRAY[]::TEXT[],
     majors TEXT[] DEFAULT ARRAY[]::TEXT[],
     minors TEXT[] DEFAULT ARRAY[]::TEXT[],
     emails TEXT[] DEFAULT ARRAY[]::TEXT[],
     phones TEXT[] DEFAULT ARRAY[]::TEXT[],
-    addresses TEXT[] DEFAULT ARRAY[]::TEXT[],
-    industries TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -41,8 +37,7 @@ CREATE INDEX idx_alumni_current_location ON alumni(current_location);
 CREATE INDEX idx_alumni_data_last_updated ON alumni(data_last_updated);
 
 -- Create GIN indexes for array fields to enable efficient searching
-CREATE INDEX idx_alumni_companies ON alumni USING GIN(companies);
-CREATE INDEX idx_alumni_roles ON alumni USING GIN(roles);
+CREATE INDEX idx_alumni_career_history ON alumni USING GIN(career_history);
 CREATE INDEX idx_alumni_majors ON alumni USING GIN(majors);
 CREATE INDEX idx_alumni_emails ON alumni USING GIN(emails);
 CREATE INDEX idx_alumni_phones ON alumni USING GIN(phones);

@@ -1,229 +1,149 @@
 {
     "name": {
-        "primary": "name",
+        "primary": "Name (First, Last)",
         "alternatives": [
-            "full name",
-            "fullname",
-            "member name",
-            "brother name",
-            "alumni name",
-            "full_name",
-            "member_name"
-        ]
-    },
-    "current_role": {
-        "primary": "current role",
-        "alternatives": [
-            "job title",
-            "position",
-            "what do you do",
-            "current position",
-            "current job",
-            "role",
-            "title",
-            "occupation",
-            "job_title",
-            "current_position",
-            "current_job"
-        ]
-    },
-    "current_company": {
-        "primary": "current company",
-        "alternatives": [
-            "employer",
-            "company",
-            "where do you work",
-            "workplace",
-            "current employer",
-            "organization",
-            "current_employer",
-            "work_place",
-            "current_organization"
-        ]
-    },
-    "current_industry": {
-        "primary": "current industry",
-        "alternatives": [
-            "industry",
-            "field",
-            "sector",
-            "what industry",
-            "current field",
-            "current sector",
-            "what field",
-            "what sector",
-            "current_field",
-            "current_sector"
+            "Name",
+            "First Name",
+            "Last Name",
+            "Full Name"
         ]
     },
     "current_location": {
-        "primary": "current location",
+        "primary": "Current Address",
         "alternatives": [
-            "location",
-            "city",
-            "where do you live",
-            "current city",
-            "residence",
-            "address",
-            "current address",
-            "where are you located",
-            "current_city",
-            "current_residence",
-            "current_address"
+            "Address - Street",
+            "Address - City, ST, Zip",
+            "Location",
+            "City",
+            "State"
+        ]
+    },
+    "phones": {
+        "primary": "Current Cell Phone Number",
+        "alternatives": [
+            "Cell Phone Number",
+            "Cell Number",
+            "Phone",
+            "Mobile",
+            "Contact Number"
+        ]
+    },
+    "emails": {
+        "primary": "Current Personal Email",
+        "alternatives": [
+            "Email Address",
+            "Personal Email",
+            "UCSB Email",
+            "Email",
+            "Contact Email"
+        ]
+    },
+    "current_role": {
+        "primary": "Work Company",
+        "alternatives": [
+            "Company you are currently employed at",
+            "Work Company",
+            "Current Position",
+            "Job Title",
+            "Role"
+        ]
+    },
+    "current_company": {
+        "primary": "Work Company",
+        "alternatives": [
+            "Company you are currently employed at",
+            "Work Company",
+            "Employer",
+            "Current Employer",
+            "Organization"
+        ]
+    },
+    "current_industry": {
+        "primary": "Industry",
+        "alternatives": [
+            "Industry you are working in",
+            "Industry",
+            "Field",
+            "Sector",
+            "Current Industry"
         ]
     },
     "family_branch": {
-        "primary": "family branch",
+        "primary": "Family Name",
         "alternatives": [
-            "branch",
-            "family",
-            "family tree",
-            "line",
-            "family line",
-            "which branch",
-            "family_tree",
-            "family_line",
-            "which_branch"
-        ]
-    },
-    "graduation_year": {
-        "primary": "graduation year",
-        "alternatives": [
-            "grad year",
-            "year graduated",
-            "graduation date",
-            "grad date",
-            "when did you graduate",
-            "class of",
-            "grad_year",
-            "year_graduated",
-            "graduation_date",
-            "grad_date",
-            "class_of"
+            "Family",
+            "Family name (e.g. li, heller)",
+            "Family name",
+            "Branch",
+            "Family Branch"
         ]
     },
     "big_brother": {
-        "primary": "big brother",
+        "primary": "Big Brother",
         "alternatives": [
-            "big",
-            "big bro",
-            "mentor",
-            "who was your big",
-            "big brother's name",
-            "big_bro",
-            "big_brother_name",
-            "mentor_name"
+            "Big Bro",
+            "Big Brother",
+            "Big",
+            "Mentor"
         ]
     },
     "little_brothers": {
-        "primary": "little brothers",
+        "primary": "Little Brother(s)",
         "alternatives": [
-            "littles",
-            "little bros",
-            "who are your littles",
-            "little brothers names",
-            "little brother names",
-            "who were your littles",
-            "little_bros",
-            "little_brothers_names",
-            "little_brother_names"
+            "Little Bro(s)",
+            "Little Bro",
+            "Littles",
+            "Little Brothers"
+        ]
+    },
+    "graduation_year": {
+        "primary": "Graduation Year",
+        "alternatives": [
+            "UCSB Graduation Year",
+            "Grad Year",
+            "Graduation Year from UCSB",
+            "Year Graduated",
+            "Class of"
+        ]
+    },
+    "majors": {
+        "primary": "Major at UCSB",
+        "alternatives": [
+            "Major",
+            "Major at UCSB",
+            "Degree",
+            "Field of Study",
+            "Major(s)"
         ]
     },
     "linkedin_url": {
-        "primary": "linkedin url",
+        "primary": "LinkedIn URL",
         "alternatives": [
-            "linkedin",
-            "linkedin profile",
-            "linkedin link",
-            "linkedin_profile",
-            "linkedin_link",
-            "linkedin_profile_url",
-            "linkedin_url"
-        ]
-    },
-    "picture_url": {
-        "primary": "picture url",
-        "alternatives": [
-            "picture",
-            "photo",
-            "profile picture",
-            "profile photo",
-            "profile_picture",
-            "profile_photo",
-            "picture_link",
-            "photo_link",
-            "profile_picture_url",
-            "profile_photo_url"
-        ]
-    },
-    "bio": {
-        "primary": "bio",
-        "alternatives": [
-            "biography",
-            "about",
-            "tell us about yourself",
-            "description",
-            "profile",
-            "introduction",
-            "about_me",
-            "about_yourself",
-            "profile_description"
+            "LinkedIn url",
+            "LinkedIn",
+            "LinkedIn Profile",
+            "LinkedIn Link"
         ]
     },
     "source_sheet": {
-        "primary": "source sheet",
-        "alternatives": [
-            "source",
-            "data source",
-            "sheet name",
-            "source_name",
-            "data_source",
-            "sheet_name",
-            "source_file"
-        ]
+        "primary": "source_sheet",
+        "alternatives": []
     },
     "has_linkedin": {
-        "primary": "has linkedin",
-        "alternatives": [
-            "linkedin available",
-            "has linkedin profile",
-            "linkedin_available",
-            "has_linkedin_profile",
-            "linkedin_profile_available"
-        ]
+        "primary": "has_linkedin",
+        "alternatives": []
     },
     "scraped": {
         "primary": "scraped",
-        "alternatives": [
-            "data scraped",
-            "profile scraped",
-            "data_scraped",
-            "profile_scraped",
-            "has_been_scraped"
-        ]
+        "alternatives": []
     },
     "manually_verified": {
-        "primary": "manually verified",
-        "alternatives": [
-            "verified",
-            "data verified",
-            "profile verified",
-            "manually_verified",
-            "data_verified",
-            "profile_verified",
-            "has_been_verified"
-        ]
+        "primary": "manually_verified",
+        "alternatives": []
     },
     "data_last_updated": {
-        "primary": "data last updated",
-        "alternatives": [
-            "last updated",
-            "update date",
-            "last_updated",
-            "update_date",
-            "data_update_date",
-            "last_update_date"
-        ]
+        "primary": "data_last_updated",
+        "alternatives": []
     },
     "companies": {
         "primary": "companies",
@@ -251,21 +171,6 @@
             "position_history"
         ]
     },
-    "majors": {
-        "primary": "majors",
-        "alternatives": [
-            "major",
-            "what did you study",
-            "degree",
-            "field of study",
-            "academic major",
-            "what was your major",
-            "field_of_study",
-            "academic_major",
-            "primary_major",
-            "college_major"
-        ]
-    },
     "minors": {
         "primary": "minors",
         "alternatives": [
@@ -276,38 +181,6 @@
             "secondary_major",
             "additional_major",
             "college_minor"
-        ]
-    },
-    "emails": {
-        "primary": "email",
-        "alternatives": [
-            "email address",
-            "contact email",
-            "primary email",
-            "work email",
-            "personal email",
-            "what's your email",
-            "email_address",
-            "contact_email",
-            "primary_email",
-            "work_email",
-            "personal_email"
-        ]
-    },
-    "phones": {
-        "primary": "phone",
-        "alternatives": [
-            "phone number",
-            "contact number",
-            "mobile",
-            "cell",
-            "what's your phone number",
-            "contact phone",
-            "phone_number",
-            "contact_number",
-            "mobile_number",
-            "cell_number",
-            "contact_phone"
         ]
     },
     "addresses": {

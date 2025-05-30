@@ -1,5 +1,6 @@
 // Script to extract all names from the family tree CSV files
 // This is just the script used by Claude AI. Idk how to run it. But you should probably begin by downloading all of the family trees from the google drive folder as .csv
+// Running it in Claude is the way to go. Then copy and paste the names into the names.csv file.
 const Papa = require('papaparse');
 
 async function extractAllNames() {
