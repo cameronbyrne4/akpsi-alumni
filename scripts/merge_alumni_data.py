@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from pathlib import Path
 from datetime import datetime
+import re
 
 # Define the categories we want to track
 CATEGORIES = [
@@ -37,12 +38,51 @@ def clean_name(name):
     return str(name).strip().lower()
 
 def merge_lists(list1, list2):
-    """Merge two lists of strings, removing duplicates while preserving order."""
-    if pd.isna(list1):
-        return list2 if not pd.isna(list2) else None
-    if pd.isna(list2):
-        return list1
-    return list(set(str(list1).split(',') + str(list2).split(',')))
+    """Merge two lists of strings, removing duplicates while preserving order. Always return a comma-separated string or None."""
+    def to_list(val):
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            return []
+        if isinstance(val, (list, tuple)):
+            return [str(x).strip() for x in val if pd.notna(x) and str(x).strip()]
+        if isinstance(val, str):
+            return [x.strip() for x in val.split(',') if x.strip()]
+        return [str(val).strip()]
+
+    l1 = to_list(list1)
+    l2 = to_list(list2)
+    merged = []
+    seen = set()
+    for item in l1 + l2:
+        if item and item not in seen:
+            merged.append(item)
+            seen.add(item)
+    if not merged:
+        return None
+    return ','.join(merged)
+
+def extract_linkedin_url(text):
+    """Extract LinkedIn URL from text that might contain other information."""
+    if pd.isna(text):
+        return None
+    
+    # Look for URLs in the text
+    urls = re.findall(r'https?://[^\s,]+', str(text))
+    linkedin_urls = [url for url in urls if 'linkedin.com' in url.lower()]
+    
+    if linkedin_urls:
+        return linkedin_urls[0]
+    return None
+
+def extract_graduation_year(text):
+    """Extract graduation year from text that might contain other information."""
+    if pd.isna(text):
+        return None
+    
+    # Look for 4-digit years between 1900 and 2025
+    years = re.findall(r'\b(19|20)\d{2}\b', str(text))
+    if years:
+        return years[0]
+    return None
 
 def get_column_mapping(df_columns):
     """Create a mapping of our categories to the sheet's columns."""
@@ -93,6 +133,16 @@ def process_mf_form2(df):
     
     return pd.DataFrame(processed_rows)
 
+def process_form5(df):
+    """Process form5.csv specific formatting."""
+    # Extract LinkedIn URLs and graduation years from combined columns
+    if 'LinkedIn URL' in df.columns:
+        df['linkedin_url'] = df['LinkedIn URL'].apply(extract_linkedin_url)
+        df['graduation_year'] = df['LinkedIn URL'].apply(extract_graduation_year)
+        df = df.drop('LinkedIn URL', axis=1)
+    
+    return df
+
 def process_sheet(file_path, master_df):
     """Process a single sheet file and merge its data with the master dataframe."""
     print(f"Processing {file_path}...")
@@ -109,6 +159,8 @@ def process_sheet(file_path, master_df):
         df = process_form1(df)
     elif filename == 'MF-Form2_2021-07-01.csv':
         df = process_mf_form2(df)
+    elif filename == 'form5.csv':
+        df = process_form5(df)
     
     # Get column mapping
     column_mapping = get_column_mapping(df.columns)
@@ -184,9 +236,11 @@ def main():
         if category not in master_df.columns:
             master_df[category] = None
     
-    # Process all sheet files
+    # Process all sheet files except form5.csv
     sheets_dir = Path('data/raw/sheets')
     for file_path in sheets_dir.glob('*.csv'):
+        if os.path.basename(file_path) == 'form5.csv':
+            continue
         master_df = process_sheet(file_path, master_df)
     
     # Save the consolidated file
