@@ -54,7 +54,7 @@ export function SideNav({
           <li>
             <button
               className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
-              onClick={() => { onManualSearch(); onClose(); }}
+              onClick={() => { onManualSearch(); }}
             >
               Alumni Search
             </button>
@@ -62,7 +62,7 @@ export function SideNav({
           <li>
             <button
               className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/family-trees' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
-              onClick={() => { onFamilyTrees(); onClose(); }}
+              onClick={() => { onFamilyTrees(); }}
             >
               Family Trees
             </button>
@@ -78,7 +78,7 @@ export function SideNav({
               <li key={idx}>
                 <button
                   className="w-full text-left px-2 py-1 rounded hover:bg-secondary/80 text-sm truncate"
-                  onClick={() => { onSelectPrevious(query); onClose(); }}
+                  onClick={() => { onSelectPrevious(query); }}
                   title={query}
                 >
                   {query}

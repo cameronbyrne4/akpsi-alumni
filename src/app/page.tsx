@@ -36,7 +36,8 @@ export default function Home() {
     company: [] as string[],
     role: [] as string[],
     city: [] as string[],
-    graduationYear: [2000, 2023] as [number, number],
+    graduationYear: undefined as [number, number] | undefined,
+    hasContact: false,
   })
   const {
     manualSearchMode,
@@ -76,6 +77,14 @@ export default function Home() {
   // Helper to build Supabase filter query
   const buildQuery = () => {
     let q = supabase.from('alumni').select('*', { count: 'exact' })
+    
+    // Has contact info - must be first filter
+    if (filters.hasContact) {
+      q = q.or('emails.not.is.null,phones.not.is.null,linkedin_url.not.is.null')
+        .not('emails', 'eq', '{}')
+        .not('phones', 'eq', '{}')
+    }
+
     // Search
     if (searchQuery) {
       q = q.or(`name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%,companies.cs.{${searchQuery}}`)
@@ -109,19 +118,27 @@ export default function Home() {
     let q = buildQuery()
     q = q.order('created_at', { ascending: false })
       .range(pageNum * PAGE_SIZE, pageNum * PAGE_SIZE + PAGE_SIZE - 1)
-    const { data, error, count } = await q
-    if (error) {
+    
+    try {
+      const { data, error, count } = await q
+      if (error) {
+        console.error('Error fetching alumni:', error)
+        setLoading(false)
+        return
+      }
+      console.log('Fetched alumni data:', data)
+      if (reset) {
+        setAlumni(data || [])
+      } else {
+        setAlumni((prev) => [...prev, ...(data || [])])
+      }
+      setHasMore((data?.length || 0) === PAGE_SIZE)
+      setTotalCount(count ?? 0)
+    } catch (err) {
+      console.error('Exception while fetching alumni:', err)
+    } finally {
       setLoading(false)
-      return
     }
-    if (reset) {
-      setAlumni(data || [])
-    } else {
-      setAlumni((prev) => [...prev, ...(data || [])])
-    }
-    setHasMore((data?.length || 0) === PAGE_SIZE)
-    setTotalCount(count ?? 0)
-    setLoading(false)
   }
 
   // Initial load and when filters/search change
@@ -168,6 +185,9 @@ export default function Home() {
     aiInputRef.current = query
     setAiInputValue(query)
     try {
+      // Add artificial delay to make loading state visible
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
       const res = await fetch('/api/ai-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -250,7 +270,9 @@ export default function Home() {
                     </p>
                     <div className="pt-2 border-t">
                       <p className="text-sm font-medium">Credits</p>
-                      <p className="text-sm text-muted-foreground">Cameron Byrne + Parth Mahajan</p>
+                      <p className="text-sm text-muted-foreground">
+                        <a href="https://linkedin.com/in/cameronbyrne00" target="_blank" rel="noopener noreferrer" className="text-muted-foreground underline underline-offset-2 hover:text-primary transition-colors">Cameron Byrne</a> + Parth Mahajan
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">May 2025</p>
                     </div>
                   </div>
@@ -279,6 +301,7 @@ export default function Home() {
           onSubmit={handleAiSearch} 
           value={aiInputValue}
           onChange={setAiInputValue}
+          isLoading={aiLoading}
         />
         {/* Example prompts popover */}
         <div className="relative flex justify-center mt-2">
@@ -337,12 +360,6 @@ export default function Home() {
             </button>
           </div>
         )}
-        {aiLoading && (
-          <div className="flex flex-col items-center mt-8">
-            <div className="h-4 w-32 rounded-full bg-primary/20 animate-pulse mb-2" />
-            <span className="text-muted-foreground text-sm">Thinking...</span>
-          </div>
-        )}
         {aiError && (
           <div className="flex flex-col items-center mt-4">
             <span className="text-red-500 text-sm">{aiError}</span>
@@ -369,7 +386,8 @@ export default function Home() {
                     company: [],
                     role: [],
                     city: [],
-                    graduationYear: [2000, 2023],
+                    graduationYear: undefined,
+                    hasContact: false,
                   })
                   setSearchQuery('')
                   setAiSelectedFilters({
@@ -403,6 +421,13 @@ export default function Home() {
                     familyBranch={alum.family_branch}
                     graduationYear={alum.graduation_year}
                     location={alum.location}
+                    bigBrother={alum.big_brother}
+                    littleBrothers={alum.little_brothers}
+                    linkedinUrl={alum.linkedin_url}
+                    email={alum.email}
+                    phone={alum.phone}
+                    major={alum.major}
+                    minor={alum.minor}
                   />
                 ))
               )}

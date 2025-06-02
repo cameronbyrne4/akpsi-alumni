@@ -24,4 +24,8 @@ export type Alumni = {
   manually_verified: boolean
   source_sheet?: string
   created_at: string
+  email?: string
+  phone?: string
+  major?: string
+  minor?: string
 } 

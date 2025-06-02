@@ -84,11 +84,16 @@ module.exports = {
   				'0%, 100%': { opacity: '0' },
   				'50%': { opacity: '1' },
   			},
+  			'shimmer': {
+  				'0%, 100%': { opacity: '1' },
+  				'50%': { opacity: '0.3' },
+  			},
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'blink-caret': 'blink-caret 1s step-end infinite',
+  			'shimmer': 'shimmer 0.7s ease-in-out infinite',
   		}
   	}
   },

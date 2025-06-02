@@ -1,26 +1,42 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, GraduationCap, Users } from 'lucide-react'
+import { MapPin, GraduationCap } from 'lucide-react'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { AlumniProfileDialog } from '@/components/ui/alumni-profile-dialog'
 
 interface AlumniCardProps {
   name: string
   pictureUrl?: string | null
-  role: string
-  companies: string[]
-  bio: string
-  familyBranch: string
-  graduationYear: number
-  location: string
+  role?: string | null
+  companies?: string[]
+  bio?: string | null
+  familyBranch?: string | null
+  graduationYear?: number | null
+  location?: string | null
+  bigBrother?: string | null
+  littleBrothers?: string[] | null
+  linkedinUrl?: string | null
+  email?: string | null
+  phone?: string | null
+  major?: string | null
+  minor?: string | null
 }
 
 export function AlumniCard({
   name,
   role,
-  companies,
-  bio,
+  companies = [],
+  bio = '',
   familyBranch,
   graduationYear,
   location,
+  bigBrother,
+  littleBrothers,
+  linkedinUrl,
+  email,
+  phone,
+  major,
+  minor,
 }: AlumniCardProps) {
   // Get initials from name
   const initials = name
@@ -30,44 +46,65 @@ export function AlumniCard({
     .toUpperCase()
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="p-6 pb-0">
-        <div className="flex items-center gap-4">
-          <div className="relative h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-lg font-semibold text-primary">{initials}</span>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">{name}</h3>
-            <p className="text-sm text-muted-foreground">{role}</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {companies.map((company) => (
-              <Badge key={company} variant="secondary">
-                {company}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground">{bio}</p>
-          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              <span>{familyBranch}</span>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+          <CardHeader className="p-6 pb-0">
+            <div className="flex items-center gap-4">
+              <div className="relative h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-lg font-semibold text-primary">{initials}</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{name}</h3>
+                {role && <p className="text-sm text-muted-foreground">{role}</p>}
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <GraduationCap className="h-4 w-4" />
-              <span>{graduationYear}</span>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {companies && companies.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {companies.map((company) => (
+                    <Badge key={company} variant="secondary">
+                      {company}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                {graduationYear && (
+                  <div className="flex items-center gap-1">
+                    <GraduationCap className="h-4 w-4" />
+                    <span>{graduationYear}</span>
+                  </div>
+                )}
+                {location && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    <span>{location}</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              <span>{location}</span>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      </DialogTrigger>
+      <AlumniProfileDialog
+        name={name}
+        role={role}
+        companies={companies}
+        bio={bio}
+        familyBranch={familyBranch}
+        graduationYear={graduationYear}
+        location={location}
+        bigBrother={bigBrother}
+        littleBrothers={littleBrothers}
+        linkedinUrl={linkedinUrl}
+        email={email}
+        phone={phone}
+        major={major}
+        minor={minor}
+      />
+    </Dialog>
   )
 } 
