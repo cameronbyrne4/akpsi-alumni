@@ -6,6 +6,7 @@ import numpy as np
 from typing import List, Dict, Any
 import logging
 import re
+import ast
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -41,15 +42,49 @@ def clean_record(record: Dict[str, Any]) -> Dict[str, Any]:
     """Clean all values in a record for JSON compatibility."""
     return {k: clean_value(v) for k, v in record.items()}
 
+def extract_year(val):
+    if pd.isnull(val):
+        return None
+    try:
+        # Handle float values
+        if isinstance(val, float):
+            return int(val)
+        # Extract year from string
+        match = re.search(r'(\d{4})', str(val))
+        if match:
+            return int(match.group(1))
+        return None
+    except (ValueError, TypeError):
+        return None
+
+def format_array_for_supabase(arr: List[str]) -> str:
+    """Format an array for Supabase's text[] type."""
+    if not arr:
+        return "{}"  # Empty array in PostgreSQL
+    # Escape single quotes and wrap each element in quotes
+    escaped = [f'"{item.replace('"', '\\"')}"' for item in arr]
+    return f"{{{','.join(escaped)}}}"
+
 def convert_to_array(value: Any) -> List[str]:
-    """Convert a value to an array of strings."""
+    """Convert a value to a proper array format for Supabase."""
     if pd.isna(value) or value is None:
         return []
+    
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if pd.notna(item)]
+    
     if isinstance(value, str):
-        # Split by comma and clean each item
-        items = [item.strip() for item in value.split(',')]
-        return [item for item in items if item and item.lower() not in ['nan', 'none']]
-    return [str(value)]
+        try:
+            # Try to evaluate as a Python literal
+            evaluated = ast.literal_eval(value)
+            if isinstance(evaluated, list):
+                return [str(item).strip() for item in evaluated if pd.notna(item)]
+            return [str(evaluated).strip()]
+        except (ValueError, SyntaxError):
+            # If evaluation fails, treat as a single value
+            return [value.strip()]
+    
+    return [str(value).strip()]
 
 def delete_existing_data() -> bool:
     """Delete all existing data from the alumni table."""
@@ -82,7 +117,7 @@ def upload_alumni_data() -> bool:
             'name': 'name',
             'current_role': 'role',
             'current_company': 'companies',
-            'current_industry': 'industry',  # This will be converted to array
+            'current_industry': 'industry',
             'current_location': 'location',
             'family_branch': 'family_branch',
             'graduation_year': 'graduation_year',
@@ -113,19 +148,33 @@ def upload_alumni_data() -> bool:
             if field in upload_df.columns:
                 upload_df[field] = upload_df[field].apply(convert_to_array)
         
-        # Convert graduation_year to integer (extract first 4-digit year from string)
-        def extract_year(val):
-            if pd.isnull(val):
-                return None
-            match = re.search(r'(\\d{4})', str(val))
-            if match:
-                return int(match.group(1))
-            return None
+        # Convert graduation_year to integer
         if 'graduation_year' in upload_df.columns:
-            upload_df['graduation_year'] = upload_df['graduation_year'].apply(extract_year)
+            upload_df['graduation_year'] = upload_df['graduation_year'].apply(lambda x: extract_year(x) if x is not None else None)
         
         # Convert DataFrame to list of dictionaries and clean each record
-        records = [clean_record(record) for record in upload_df.to_dict('records')]
+        records = []
+        for _, row in upload_df.iterrows():
+            record = row.to_dict()
+            # Format array fields for Supabase
+            for field in array_fields:
+                if field in record:
+                    if record[field] is None or record[field] == []:
+                        record[field] = '{}'
+                    else:
+                        record[field] = format_array_for_supabase(record[field])
+            # Ensure graduation_year is int or None
+            if 'graduation_year' in record:
+                if record['graduation_year'] is not None:
+                    try:
+                        record['graduation_year'] = int(record['graduation_year'])
+                    except Exception:
+                        record['graduation_year'] = None
+            records.append(clean_record(record))
+        
+        # Debug: Print a sample record before upload
+        if records:
+            logger.info(f"Sample record to upload: {records[0]}")
         
         # Upload in batches of 100
         batch_size = 100
