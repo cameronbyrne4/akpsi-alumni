@@ -17,6 +17,7 @@ export default function UpdateAlumniPage() {
   const [formData, setFormData] = useState<Partial<Alumni>>({});
   const [bigBrotherError, setBigBrotherError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const validateSearchQuery = (query: string) => {
     if (!query.trim()) {
@@ -47,7 +48,18 @@ export default function UpdateAlumniPage() {
       if (error) throw error;
       if (data) {
         setAlumni(data);
-        setFormData(data);
+        setFormData({
+          id: data.id,
+          name: '',
+          role: '',
+          companies: [],
+          industry: '',
+          location: '',
+          family_branch: '',
+          graduation_year: undefined,
+          big_brother: '',
+          little_brothers: [],
+        });
       } else {
         setSearchError('No alumni found with that name');
       }
@@ -87,6 +99,41 @@ export default function UpdateAlumniPage() {
     return true;
   };
 
+  const validateName = async (name: string) => {
+    // If the name is empty, it means the user hasn't entered anything yet
+    // or is clearing the field, so we don't show an error
+    if (!name.trim()) {
+      setNameError(null);
+      return true;
+    }
+
+    if (!name.includes(' ')) {
+      setNameError('Please enter the full name (first and last name)');
+      return false;
+    }
+
+    // If the name hasn't changed, it's valid
+    if (alumni && name.toLowerCase() === alumni.name.toLowerCase()) {
+      setNameError(null);
+      return true;
+    }
+
+    // Check if the new name already exists
+    const { data, error } = await supabase
+      .from('alumni')
+      .select('name')
+      .ilike('name', name)
+      .single();
+
+    if (data) {
+      setNameError('An alumnus with this name already exists');
+      return false;
+    }
+    
+    setNameError(null);
+    return true;
+  };
+
   const handleInputChange = async (field: keyof Alumni, value: string | number | string[]) => {
     // Always update the form data first
     setFormData(prev => ({
@@ -94,9 +141,11 @@ export default function UpdateAlumniPage() {
       [field]: value
     }));
 
-    // Then validate if it's the big brother field
+    // Then validate if it's a field that needs validation
     if (field === 'big_brother') {
       await validateBigBrother(value as string);
+    } else if (field === 'name') {
+      await validateName(value as string);
     }
   };
 
@@ -104,10 +153,14 @@ export default function UpdateAlumniPage() {
     e.preventDefault();
     if (!alumni) return;
 
-    // Validate big brother one final time before submission
+    // Only validate name if it's being changed
+    if (formData.name && formData.name.trim()) {
+      const isNameValid = await validateName(formData.name);
+      if (!isNameValid) return;
+    }
     if (formData.big_brother) {
-      const isValid = await validateBigBrother(formData.big_brother);
-      if (!isValid) return;
+      const isBigBrotherValid = await validateBigBrother(formData.big_brother);
+      if (!isBigBrotherValid) return;
     }
 
     setLoading(true);
@@ -178,6 +231,23 @@ export default function UpdateAlumniPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Current: {alumni.name}</p>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="Ex. John Smith"
+                    />
+                    {nameError && (
+                      <p className="text-sm text-red-500">{nameError}</p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Current Role */}
                 <div className="space-y-2">
                   <Label htmlFor="role">Current Role</Label>
@@ -185,7 +255,7 @@ export default function UpdateAlumniPage() {
                     <p className="text-sm text-muted-foreground">Current: {alumni.role || 'Not set'}</p>
                     <Input
                       id="role"
-                      value={formData.role || ''}
+                      value={formData.role}
                       onChange={(e) => handleInputChange('role', e.target.value)}
                       placeholder="Ex. Software Engineer"
                     />
@@ -213,7 +283,7 @@ export default function UpdateAlumniPage() {
                     <p className="text-sm text-muted-foreground">Current: {alumni.industry || 'Not set'}</p>
                     <Input
                       id="industry"
-                      value={formData.industry || ''}
+                      value={formData.industry}
                       onChange={(e) => handleInputChange('industry', e.target.value)}
                       placeholder="Ex. Technology"
                     />
@@ -227,7 +297,7 @@ export default function UpdateAlumniPage() {
                     <p className="text-sm text-muted-foreground">Current: {alumni.location || 'Not set'}</p>
                     <Input
                       id="location"
-                      value={formData.location || ''}
+                      value={formData.location}
                       onChange={(e) => handleInputChange('location', e.target.value)}
                       placeholder="Ex. San Francisco, CA"
                     />
@@ -241,7 +311,7 @@ export default function UpdateAlumniPage() {
                     <p className="text-sm text-muted-foreground">Current: {alumni.family_branch || 'Not set'}</p>
                     <Input
                       id="family_branch"
-                      value={formData.family_branch || ''}
+                      value={formData.family_branch}
                       onChange={(e) => handleInputChange('family_branch', e.target.value)}
                       placeholder="Ex. Paahana"
                     />
@@ -272,7 +342,7 @@ export default function UpdateAlumniPage() {
                     <p className="text-sm text-muted-foreground">Current: {alumni.big_brother || 'Not set'}</p>
                     <Input
                       id="big_brother"
-                      value={formData.big_brother || ''}
+                      value={formData.big_brother}
                       onChange={(e) => handleInputChange('big_brother', e.target.value)}
                       placeholder="Ex. John Smith"
                     />
@@ -302,14 +372,26 @@ export default function UpdateAlumniPage() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setFormData(alumni);
+                    setFormData({
+                      id: alumni.id,
+                      name: '',
+                      role: '',
+                      companies: [],
+                      industry: '',
+                      location: '',
+                      family_branch: '',
+                      graduation_year: undefined,
+                      big_brother: '',
+                      little_brothers: [],
+                    });
                     setUpdateSuccess(false);
                     setBigBrotherError(null);
+                    setNameError(null);
                   }}
                 >
                   Reset
                 </Button>
-                <Button type="submit" disabled={loading || !!bigBrotherError}>
+                <Button type="submit" disabled={loading || !!bigBrotherError || !!nameError}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update Information'}
                 </Button>
               </div>
