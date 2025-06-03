@@ -48,8 +48,8 @@ export default function ClientLayoutShell({ children }: { children: React.ReactN
     } // else do nothing
   }
   const handleFamilyTrees = () => {
-    if (pathname !== '/family-trees') {
-      router.push('/family-trees')
+    if (pathname !== '/family-tree') {
+      router.push('/family-tree')
     } // else do nothing
   }
 

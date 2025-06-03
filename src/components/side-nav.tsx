@@ -25,8 +25,12 @@ export function SideNav({
   const router = useRouter()
   const handleNewSearch = () => {
     router.push('/')
-    onClose()
   }
+
+  const handleUpdateAlumni = () => {
+    router.push('/update-alumni')
+  }
+
   return (
     <>
       {/* Hamburger icon */}
@@ -61,10 +65,18 @@ export function SideNav({
           </li>
           <li>
             <button
-              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/family-trees' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/family-tree' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
               onClick={() => { onFamilyTrees(); }}
             >
               Family Trees
+            </button>
+          </li>
+          <li>
+            <button
+              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/update-alumni' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+              onClick={handleUpdateAlumni}
+            >
+              Update Alumni
             </button>
           </li>
         </ul>
