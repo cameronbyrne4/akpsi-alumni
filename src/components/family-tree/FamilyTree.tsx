@@ -6,13 +6,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card2';
 import { createClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogPortal } from '@/components/ui/dialog';
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 // Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// Custom DialogContent without overlay
+const CustomDialogContent = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogPrimitive.Content
+      ref={ref}
+      className={className}
+      {...props}
+    >
+      {children}
+    </DialogPrimitive.Content>
+  </DialogPortal>
+));
+CustomDialogContent.displayName = DialogPrimitive.Content.displayName;
 
 interface Member {
   id: string;
@@ -289,19 +307,6 @@ export function FamilyTree() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Zoom Controls */}
-            <div className="flex gap-2">
-              <Button onClick={handleZoomIn} variant="outline" size="sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </Button>
-              <Button onClick={handleZoomOut} variant="outline" size="sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              </Button>
-              <Button onClick={handleReset} variant="outline" size="sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-              </Button>
-            </div>
           </div>
 
           {/* Navigation instructions */}
@@ -315,7 +320,7 @@ export function FamilyTree() {
           {/* Member Details Card */}
           {selectedNode && (
             <Dialog open={!!selectedNode} onOpenChange={() => setSelectedNode(null)}>
-              <DialogContent className="max-w-2xl">
+              <CustomDialogContent className="max-w-2xl fixed bottom-4 right-4 top-auto left-auto translate-x-0 translate-y-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom duration-300 ease-in-out motion-safe:animate-none motion-reduce:animate-none border bg-background p-6 shadow-lg rounded-lg">
                 <div className="space-y-6">
                   {/* Header */}
                   <div className="flex items-start gap-6">
@@ -359,7 +364,7 @@ export function FamilyTree() {
                     </div>
                   </div>
                 </div>
-              </DialogContent>
+              </CustomDialogContent>
             </Dialog>
           )}
         </div>
