@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card2'
 import { createClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { AlumniProfileDialog } from '@/components/ui/alumni-profile-dialog';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -21,16 +20,6 @@ interface Member {
   big_brother?: string;
   little_brothers: string[];
   family_branch: string;
-  role?: string;
-  companies?: string[];
-  bio?: string;
-  graduation_year?: number;
-  location?: string;
-  linkedin_url?: string;
-  email?: string;
-  phone?: string;
-  major?: string;
-  minor?: string;
 }
 
 // Use d3.HierarchyPointNode directly since it has all the methods we need
@@ -183,23 +172,7 @@ export function FamilyTree() {
       try {
         const { data, error } = await supabase
           .from('alumni')
-          .select(`
-            id, 
-            name, 
-            big_brother, 
-            little_brothers, 
-            family_branch,
-            role,
-            companies,
-            bio,
-            graduation_year,
-            location,
-            linkedin_url,
-            email,
-            phone,
-            major,
-            minor
-          `)
+          .select('id, name, big_brother, little_brothers, family_branch')
           .eq('family_branch', selectedFamily);
 
         if (error) throw error;
@@ -342,24 +315,51 @@ export function FamilyTree() {
           {/* Member Details Card */}
           {selectedNode && (
             <Dialog open={!!selectedNode} onOpenChange={() => setSelectedNode(null)}>
-              <div className="fixed bottom-4 right-4 z-50">
-                <AlumniProfileDialog
-                  name={selectedNode.name}
-                  role={selectedNode.role}
-                  companies={selectedNode.companies}
-                  bio={selectedNode.bio}
-                  familyBranch={selectedNode.family_branch}
-                  graduationYear={selectedNode.graduation_year}
-                  location={selectedNode.location}
-                  bigBrother={selectedNode.big_brother}
-                  littleBrothers={selectedNode.little_brothers}
-                  linkedinUrl={selectedNode.linkedin_url}
-                  email={selectedNode.email}
-                  phone={selectedNode.phone}
-                  major={selectedNode.major}
-                  minor={selectedNode.minor}
-                />
-              </div>
+              <DialogContent className="max-w-2xl">
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="flex items-start gap-6">
+                    <div className="relative h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-2xl font-semibold text-primary">
+                        {selectedNode.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-bold">{selectedNode.name}</h2>
+                      <p className="text-lg text-muted-foreground">{selectedNode.family_branch} Family</p>
+                    </div>
+                  </div>
+
+                  {/* Family Info */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Family</h3>
+                    <div className="space-y-2">
+                      {selectedNode.big_brother ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Big Brother:</span>
+                          <span>{selectedNode.big_brother}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Big Brother:</span>
+                          <span>None</span>
+                        </div>
+                      )}
+                      {selectedNode.little_brothers && selectedNode.little_brothers.length > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Little Brothers:</span>
+                          <span>{selectedNode.little_brothers.join(', ')}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Little Brothers:</span>
+                          <span>None</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
             </Dialog>
           )}
         </div>
