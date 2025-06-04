@@ -8,8 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { Toaster } from '@/components/ui/toaster';
 
 export default function UpdateAlumniPage() {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [alumni, setAlumni] = useState<Alumni | null>(null);
@@ -123,7 +126,7 @@ export default function UpdateAlumniPage() {
       .from('alumni')
       .select('name')
       .ilike('name', name)
-      .single();
+      .maybeSingle();
 
     if (data) {
       setNameError('An alumnus with this name already exists');
@@ -138,7 +141,7 @@ export default function UpdateAlumniPage() {
     // Always update the form data first
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value || '' // Ensure we never set null/undefined values
     }));
 
     // Then validate if it's a field that needs validation
@@ -165,13 +168,35 @@ export default function UpdateAlumniPage() {
 
     setLoading(true);
     try {
+      // Create update object with only changed fields and required fields
+      const updateData = {
+        ...formData,
+        // Ensure required fields are included
+        name: formData.name || alumni.name,
+        role: formData.role || alumni.role,
+        companies: formData.companies || alumni.companies,
+        industry: formData.industry || alumni.industry,
+        family_branch: formData.family_branch || alumni.family_branch,
+        graduation_year: formData.graduation_year || alumni.graduation_year,
+        location: formData.location || alumni.location,
+        // Keep existing values for boolean fields
+        has_linkedin: alumni.has_linkedin,
+        scraped: alumni.scraped,
+        manually_verified: alumni.manually_verified,
+      };
+
       const { error } = await supabase
         .from('alumni')
-        .update(formData)
+        .update(updateData)
         .eq('id', alumni.id);
 
       if (error) throw error;
       setUpdateSuccess(true);
+      toast({
+        title: "Success!",
+        description: "Alumni information updated successfully.",
+        className: "bg-green-50 border-green-200",
+      });
       // Refresh the alumni data
       const { data } = await supabase
         .from('alumni')
@@ -184,6 +209,11 @@ export default function UpdateAlumniPage() {
       }
     } catch (error) {
       console.error('Error updating alumni:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update alumni information. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -191,6 +221,7 @@ export default function UpdateAlumniPage() {
 
   return (
     <main className="container mx-auto py-8">
+      <Toaster />
       <h1 className="text-3xl font-bold mb-8">Update Alumni Information</h1>
       
       {/* Search Form */}
@@ -396,9 +427,7 @@ export default function UpdateAlumniPage() {
                 </Button>
               </div>
 
-              {updateSuccess && (
-                <p className="text-green-600 text-center">Information updated successfully!</p>
-              )}
+              
             </form>
           </CardContent>
         </Card>
