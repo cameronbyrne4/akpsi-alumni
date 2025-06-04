@@ -1,6 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Menu, X } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 interface SideNavProps {
   open: boolean
@@ -23,12 +30,32 @@ export function SideNav({
 }: SideNavProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
+  // Get user email on component mount
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email || null)
+    })
+  }, [])
+
   const handleNewSearch = () => {
     router.push('/')
   }
 
   const handleUpdateAlumni = () => {
     router.push('/update-alumni')
+  }
+
+  const handleSignOut = async () => {
+    onClose(); // Close the navbar first
+    await supabase.auth.signOut();
+    router.push('/login');
+  }
+
+  // Don't render anything on the login page
+  if (pathname === '/login') {
+    return null;
   }
 
   return (
@@ -98,6 +125,15 @@ export function SideNav({
               </li>
             ))}
           </ul>
+        </div>
+        {/* Sign Out Button */}
+        <div className="absolute bottom-0 w-full p-4 border-t border-border/50">
+          <button
+            onClick={handleSignOut}
+            className="w-full text-left text-sm text-muted-foreground hover:text-foreground underline"
+          >
+            Sign out ({userEmail})
+          </button>
         </div>
       </nav>
     </>
