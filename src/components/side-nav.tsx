@@ -32,11 +32,22 @@ export function SideNav({
   const router = useRouter()
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
-  // Get user email on component mount
+  // Get user email on component mount and listen for auth changes
   useEffect(() => {
+    // Initial fetch
     supabase.auth.getUser().then(({ data }) => {
       setUserEmail(data.user?.email || null)
     })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email || null)
+    })
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   const handleNewSearch = () => {
