@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card2';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select2';
 import { useToast } from '@/components/ui/use-toast';
+import { Search } from 'lucide-react';
 
 interface Member {
   id: string;
@@ -31,12 +32,15 @@ export default function FamilyTreeAdmin() {
   const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [bigBrother, setBigBrother] = useState<string>('');
+  const [unassignedSearch, setUnassignedSearch] = useState('');
+  const [unassignedMembers, setUnassignedMembers] = useState<Member[]>([]);
+  const [searchingUnassigned, setSearchingUnassigned] = useState(false);
 
   useEffect(() => {
     fetchFamilyData();
   }, [selectedFamily]);
 
-  const fetchFamilyData = async () => {
+  const fetchFamilyData = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -56,7 +60,76 @@ export default function FamilyTreeAdmin() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedFamily, toast]);
+
+  const searchUnassignedMembers = useCallback(async () => {
+    if (!unassignedSearch.trim()) return;
+    
+    setSearchingUnassigned(true);
+    try {
+      const { data, error } = await supabase
+        .from('alumni')
+        .select('*')
+        .is('family_branch', null)
+        .ilike('name', `%${unassignedSearch}%`)
+        .limit(10);
+
+      if (error) throw error;
+      setUnassignedMembers(data || []);
+    } catch (error) {
+      console.error('Error searching unassigned members:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to search unassigned members',
+        variant: 'destructive',
+      });
+    } finally {
+      setSearchingUnassigned(false);
+    }
+  }, [unassignedSearch, toast]);
+
+  const addToFamily = useCallback(async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('alumni')
+        .update({ family_branch: selectedFamily })
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Member added to family successfully',
+      });
+
+      // Refresh both lists without causing a full re-render
+      const { data: updatedMembers } = await supabase
+        .from('alumni')
+        .select('*')
+        .eq('family_branch', selectedFamily);
+      
+      setMembers(updatedMembers || []);
+
+      // Update unassigned members list if we have a search active
+      if (unassignedSearch.trim()) {
+        const { data: updatedUnassigned } = await supabase
+          .from('alumni')
+          .select('*')
+          .is('family_branch', null)
+          .ilike('name', `%${unassignedSearch}%`)
+          .limit(10);
+        
+        setUnassignedMembers(updatedUnassigned || []);
+      }
+    } catch (error) {
+      console.error('Error adding member to family:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add member to family',
+        variant: 'destructive',
+      });
+    }
+  }, [selectedFamily, unassignedSearch, toast]);
 
   const handleUpdateBigBrother = async () => {
     if (!selectedMember || !bigBrother) return;
@@ -218,6 +291,68 @@ export default function FamilyTreeAdmin() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Unassigned Members Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Add Unassigned Members</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Current {selectedFamily} members: {members.map(m => m.name).sort((a, b) => a.localeCompare(b)).join(', ')}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search for unassigned members..."
+                  value={unassignedSearch}
+                  onChange={(e) => setUnassignedSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && searchUnassignedMembers()}
+                />
+              </div>
+              <Button
+                onClick={searchUnassignedMembers}
+                disabled={searchingUnassigned || !unassignedSearch.trim()}
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
+            </div>
+
+            {searchingUnassigned ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+              </div>
+            ) : unassignedMembers.length > 0 ? (
+              <div className="space-y-2">
+                {unassignedMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                  >
+                    <div>
+                      <div className="font-medium">{member.name}</div>
+                      <div className="text-sm text-gray-500">No family assigned</div>
+                    </div>
+                    <Button
+                      onClick={() => addToFamily(member.id)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Add to {selectedFamily} Family
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : unassignedSearch ? (
+              <div className="text-center text-gray-500 py-4">
+                No unassigned members found
+              </div>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 
