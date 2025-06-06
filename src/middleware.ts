@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server'
 const publicPaths = ['/login']
 
 // Define admin-only paths
-const adminPaths = ['/admin', '/update-alumni']
+const adminPaths = ['/admin', '/update-alumni', '/admin/family-tree']
 
 // Define the home/default authenticated path
 const homePath = '/'
@@ -78,6 +78,8 @@ export function middleware(request: NextRequest) {
       // Non-admin user trying to access admin path -> redirect to home
       return createRedirectResponse(homePath, request)
     }
+    // Admin user accessing admin path -> allow access
+    return NextResponse.next()
   }
 
   // Handle protected paths

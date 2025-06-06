@@ -82,14 +82,24 @@ export function SideNav({
             </button>
           </li>
           {!isLoading && isAdmin && (
-            <li>
-              <button
-                className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/update-alumni' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
-                onClick={handleUpdateAlumni}
-              >
-                Update Alumni
-              </button>
-            </li>
+            <>
+              <li>
+                <button
+                  className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/update-alumni' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+                  onClick={handleUpdateAlumni}
+                >
+                  Update Alumni
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/admin/family-tree' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+                  onClick={() => router.push('/admin/family-tree')}
+                >
+                  Manage Family Trees
+                </button>
+              </li>
+            </>
           )}
         </ul>
         <div className="border-t border-border/50 px-4 pt-4">
