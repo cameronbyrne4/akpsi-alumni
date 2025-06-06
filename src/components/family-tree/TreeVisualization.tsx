@@ -11,14 +11,13 @@ interface Member {
   family_branch: string;
 }
 
-interface TreeNode extends d3.HierarchyNode<Member> {
-  x: number;
-  y: number;
-}
-
 interface TreeVisualizationProps {
   members: Member[];
 }
+
+type HierarchyNode = d3.HierarchyNode<Member>;
+type HierarchyPointNode = d3.HierarchyPointNode<Member>;
+type HierarchyPointLink = d3.HierarchyPointLink<Member>;
 
 export function TreeVisualization({ members }: TreeVisualizationProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -43,26 +42,26 @@ export function TreeVisualization({ members }: TreeVisualizationProps) {
     const height = svgRef.current.clientHeight;
     const margin = { top: 20, right: 90, bottom: 30, left: 90 };
 
-    const treeLayout = d3.tree<TreeNode>()
+    const treeLayout = d3.tree<Member>()
       .size([height - margin.top - margin.bottom, width - margin.left - margin.right]);
 
     const treeData = treeLayout(hierarchy);
 
     // Create SVG group for zooming
     const g = d3.select(svgRef.current)
-      .append('g');
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Add zoom behavior
-    const zoom = d3.zoom()
-      .scaleExtent([0.5, 2])
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 3]) // Allow zooming out more and in more
       .on('zoom', (event) => {
         g.attr('transform', event.transform);
       });
 
-    // Initialize zoom with identity transform
     d3.select(svgRef.current)
       .call(zoom)
-      .call(zoom.transform, d3.zoomIdentity);
+      .call(zoom.transform, d3.zoomIdentity.translate(width / 2, 0).scale(0.8)); // Center the tree initially
 
     // Draw links
     g.selectAll('.link')
@@ -70,9 +69,9 @@ export function TreeVisualization({ members }: TreeVisualizationProps) {
       .enter()
       .append('path')
       .attr('class', 'link')
-      .attr('d', d3.linkHorizontal<TreeNode, d3.HierarchyLink<TreeNode>>()
-        .x(d => d.y)
-        .y(d => d.x))
+      .attr('d', d3.linkHorizontal<HierarchyPointLink, HierarchyPointNode>()
+        .x((d: any) => d.y)
+        .y((d: any) => d.x))
       .attr('fill', 'none')
       .attr('stroke', '#ccc')
       .attr('stroke-width', 1.5);
@@ -103,6 +102,10 @@ export function TreeVisualization({ members }: TreeVisualizationProps) {
           .transition()
           .duration(200)
           .attr('r', 10);
+      })
+      .on('click', function(event, d: HierarchyPointNode) {
+        event.stopPropagation();
+        console.log('Clicked member:', d.data);
       });
 
     // Add labels
@@ -112,7 +115,12 @@ export function TreeVisualization({ members }: TreeVisualizationProps) {
       .attr('text-anchor', d => d.children ? 'end' : 'start')
       .text(d => d.data.name)
       .attr('font-size', '12px')
-      .attr('fill', '#374151');
+      .attr('fill', '#374151')
+      .style('cursor', 'pointer')
+      .on('click', function(event, d: HierarchyPointNode) {
+        event.stopPropagation();
+        console.log('Clicked member:', d.data);
+      });
 
   }, [members]);
 

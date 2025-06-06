@@ -55,8 +55,7 @@ export function middleware(request: NextRequest) {
     isPublicPath: isPublicPath(pathname),
     isAdminPath: isAdminPath(pathname),
     isAuthenticated,
-    userRole,
-    cookies: request.cookies.getAll()
+    userRole
   })
 
   // Handle public paths (like /login)

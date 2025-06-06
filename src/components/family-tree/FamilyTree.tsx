@@ -101,15 +101,15 @@ export function FamilyTree() {
     const height = 600;
     const margin = { top: 50, right: 50, bottom: 50, left: 50 };
 
-    // Initialize zoom behavior if not already done
-    if (!zoomRef.current) {
-      zoomRef.current = d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.3, 3])
-        .on('zoom', (event) => {
-          container.attr('transform', event.transform);
-        });
-      svg.call(zoomRef.current);
-    }
+    // Initialize zoom behavior
+    zoomRef.current = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.3, 3])
+      .on('zoom', (event) => {
+        container.attr('transform', event.transform);
+      });
+
+    // Apply zoom behavior to SVG
+    svg.call(zoomRef.current);
 
     const container = svg.append('g')
       .attr('class', 'tree-container');
@@ -170,7 +170,7 @@ export function FamilyTree() {
       .style('opacity', d => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1)
       .text(d => d.data.name);
 
-    // Only center the tree on initial render or family change
+    // Center the tree on initial render or family change
     if (!selectedNode) {
       const bounds = container.node()?.getBBox();
       if (bounds && zoomRef.current) {
@@ -183,6 +183,15 @@ export function FamilyTree() {
       }
     }
   };
+
+  // Cleanup zoom behavior when component unmounts
+  useEffect(() => {
+    return () => {
+      if (svgRef.current && zoomRef.current) {
+        d3.select(svgRef.current).on('.zoom', null);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchFamilyData = async () => {
@@ -214,7 +223,7 @@ export function FamilyTree() {
     if (treeData) {
       renderTree();
     }
-  }, [treeData]); // Only re-render on tree data changes
+  }, [treeData, selectedFamily]); // Add selectedFamily to dependencies
 
   // Effect for handling selection changes
   useEffect(() => {
