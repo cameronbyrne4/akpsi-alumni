@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Menu, X } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
+import { useUserData } from '@/hooks/useUserData'
 
 // Initialize Supabase client
-const supabase = createClient(
+const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
@@ -30,25 +31,7 @@ export function SideNav({
 }: SideNavProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-
-  // Get user email on component mount and listen for auth changes
-  useEffect(() => {
-    // Initial fetch
-    supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email || null)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user?.email || null)
-    })
-
-    // Cleanup subscription
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
+  const { isAdmin, isLoading } = useUserData()
 
   const handleNewSearch = () => {
     router.push('/')
@@ -56,17 +39,6 @@ export function SideNav({
 
   const handleUpdateAlumni = () => {
     router.push('/update-alumni')
-  }
-
-  const handleSignOut = async () => {
-    onClose(); // Close the navbar first
-    await supabase.auth.signOut();
-    router.push('/login');
-  }
-
-  // Don't render anything on the login page
-  if (pathname === '/login') {
-    return null;
   }
 
   return (
@@ -109,14 +81,16 @@ export function SideNav({
               Family Trees
             </button>
           </li>
-          <li>
-            <button
-              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/update-alumni' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
-              onClick={handleUpdateAlumni}
-            >
-              Update Alumni
-            </button>
-          </li>
+          {!isLoading && isAdmin && (
+            <li>
+              <button
+                className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/update-alumni' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+                onClick={handleUpdateAlumni}
+              >
+                Update Alumni
+              </button>
+            </li>
+          )}
         </ul>
         <div className="border-t border-border/50 px-4 pt-4">
           <div className="font-semibold text-sm mb-2 text-muted-foreground">Previous Searches</div>
@@ -136,15 +110,6 @@ export function SideNav({
               </li>
             ))}
           </ul>
-        </div>
-        {/* Sign Out Button */}
-        <div className="absolute bottom-0 w-full p-4 border-t border-border/50">
-          <button
-            onClick={handleSignOut}
-            className="w-full text-left text-sm text-muted-foreground hover:text-foreground underline"
-          >
-            Sign out ({userEmail})
-          </button>
         </div>
       </nav>
     </>
