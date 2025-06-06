@@ -50,8 +50,7 @@ export function TreeVisualization({ members }: TreeVisualizationProps) {
 
     // Create SVG group for zooming
     const g = d3.select(svgRef.current)
-      .append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+      .append('g');
 
     // Add zoom behavior
     const zoom = d3.zoom()
@@ -60,7 +59,10 @@ export function TreeVisualization({ members }: TreeVisualizationProps) {
         g.attr('transform', event.transform);
       });
 
-    d3.select(svgRef.current).call(zoom);
+    // Initialize zoom with identity transform
+    d3.select(svgRef.current)
+      .call(zoom)
+      .call(zoom.transform, d3.zoomIdentity);
 
     // Draw links
     g.selectAll('.link')
