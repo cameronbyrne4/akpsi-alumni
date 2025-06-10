@@ -15,8 +15,8 @@ interface AlumniProfileDialogProps {
   bigBrother?: string | null
   littleBrothers?: string[] | null
   linkedinUrl?: string | null
-  email?: string | null
-  phone?: string | null
+  email?: string[] | null
+  phone?: string[] | null
   major?: string | null
   minor?: string | null
 }
@@ -32,8 +32,8 @@ export function AlumniProfileDialog({
   bigBrother,
   littleBrothers = [],
   linkedinUrl,
-  email,
-  phone,
+  email = [],
+  phone = [],
   major,
   minor,
 }: AlumniProfileDialogProps) {
@@ -75,26 +75,34 @@ export function AlumniProfileDialog({
 
         {/* Contact Info */}
         <div className="flex flex-wrap gap-4">
-          {email ? (
-            <Button variant="outline" size="sm" className="gap-2" asChild>
-              <a href={`mailto:${email}`}>
-                <Mail className="h-4 w-4" />
-                Email
-              </a>
-            </Button>
+          {email && email.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {email.map((e, index) => (
+                <Button key={e} variant="outline" size="sm" className="gap-2" asChild>
+                  <a href={`mailto:${e}`}>
+                    <Mail className="h-4 w-4" />
+                    {index === 0 ? 'Email' : `Email ${index + 1}`}
+                  </a>
+                </Button>
+              ))}
+            </div>
           ) : (
             <Button variant="outline" size="sm" className="gap-2" disabled>
               <Mail className="h-4 w-4" />
               Email 🤷‍♂️
             </Button>
           )}
-          {phone ? (
-            <Button variant="outline" size="sm" className="gap-2" asChild>
-              <a href={`tel:${phone}`}>
-                <Phone className="h-4 w-4" />
-                Call
-              </a>
-            </Button>
+          {phone && phone.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {phone.map((p, index) => (
+                <Button key={p} variant="outline" size="sm" className="gap-2" asChild>
+                  <a href={`tel:${p}`}>
+                    <Phone className="h-4 w-4" />
+                    {index === 0 ? 'Call' : `Call ${index + 1}`}
+                  </a>
+                </Button>
+              ))}
+            </div>
           ) : (
             <Button variant="outline" size="sm" className="gap-2" disabled>
               <Phone className="h-4 w-4" />
@@ -129,7 +137,7 @@ export function AlumniProfileDialog({
         {/* Experience */}
         <div>
           <h3 className="text-lg font-semibold mb-2">Experience</h3>
-          {companies.length > 0 ? (
+          {companies && companies.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {companies.map((company) => (
                 <Badge key={company} variant="secondary">

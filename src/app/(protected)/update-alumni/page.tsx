@@ -7,9 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Toaster } from '@/components/ui/toaster';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function UpdateAlumniPage() {
   const { toast } = useToast();
@@ -21,6 +31,19 @@ export default function UpdateAlumniPage() {
   const [bigBrotherError, setBigBrotherError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newAlumniData, setNewAlumniData] = useState<Partial<Alumni>>({
+    name: '',
+    role: '',
+    companies: [] as string[],
+    industry: [] as string[],
+    location: '',
+    family_branch: '',
+    graduation_year: undefined,
+    big_brother: '',
+    little_brothers: [] as string[],
+  });
 
   const validateSearchQuery = (query: string) => {
     if (!query.trim()) {
@@ -41,6 +64,7 @@ export default function UpdateAlumniPage() {
     setLoading(true);
     setAlumni(null);
     setUpdateSuccess(false);
+    setIsCreating(false);
     try {
       const { data, error } = await supabase
         .from('alumni')
@@ -56,7 +80,7 @@ export default function UpdateAlumniPage() {
           name: '',
           role: '',
           companies: [],
-          industry: '',
+          industry: [] as string[],
           location: '',
           family_branch: '',
           graduation_year: undefined,
@@ -141,7 +165,7 @@ export default function UpdateAlumniPage() {
     // Always update the form data first
     setFormData(prev => ({
       ...prev,
-      [field]: value || '' // Ensure we never set null/undefined values
+      [field]: value // Remove the || '' since we want to preserve arrays
     }));
 
     // Then validate if it's a field that needs validation
@@ -219,6 +243,118 @@ export default function UpdateAlumniPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!alumni) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('alumni')
+        .delete()
+        .eq('id', alumni.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Alumni record deleted successfully.",
+        className: "bg-green-50 border-green-200",
+      });
+
+      // Reset the form
+      setAlumni(null);
+      setFormData({});
+      setSearchQuery('');
+      setShowDeleteDialog(false);
+    } catch (error) {
+      console.error('Error deleting alumni:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete alumni record. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newAlumniData.name) {
+      toast({
+        title: "Error",
+        description: "Name is required to create a new alumni record.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Include all required fields and initialize arrays properly
+      const createData = {
+        name: newAlumniData.name,
+        has_linkedin: false,
+        scraped: false,
+        manually_verified: false,
+        // Initialize all array fields as empty arrays
+        companies: [] as string[],
+        industry: [] as string[],
+        little_brothers: [] as string[],
+        source_sheet: [] as string[],
+        career_history: [] as string[],
+        majors: [] as string[],
+        minors: [] as string[],
+        emails: [] as string[],
+        phones: [] as string[],
+      };
+
+      // Better console logging
+      console.log('Creating new alumni record:', JSON.stringify(createData, null, 2));
+
+      const { data, error } = await supabase
+        .from('alumni')
+        .insert([createData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success!",
+        description: "New alumni record created successfully.",
+        className: "bg-green-50 border-green-200",
+      });
+
+      // Reset the form and show the new record
+      setAlumni(data);
+      setFormData(data);
+      setIsCreating(false);
+      setNewAlumniData({
+        name: '',
+        role: '',
+        companies: [] as string[],
+        industry: [] as string[],
+        location: '',
+        family_branch: '',
+        graduation_year: undefined,
+        big_brother: '',
+        little_brothers: [] as string[],
+      });
+    } catch (error) {
+      console.error('Error creating alumni:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new alumni record. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="container mx-auto py-8">
       <Toaster />
@@ -247,17 +383,94 @@ export default function UpdateAlumniPage() {
               </Button>
             </div>
             {searchError && (
-              <p className="text-sm text-red-500">{searchError}</p>
+              <div className="space-y-2">
+                <p className="text-sm text-red-500">{searchError}</p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreating(true);
+                    setNewAlumniData({
+                      name: searchQuery,
+                      role: '',
+                      companies: [] as string[],
+                      industry: [] as string[],
+                      location: '',
+                      family_branch: '',
+                      graduation_year: undefined,
+                      big_brother: '',
+                      little_brothers: [] as string[],
+                    });
+                  }}
+                >
+                  Create New Alumni Record
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
       </Card>
 
+      {/* Create New Alumni Form */}
+      {isCreating && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Create New Alumni Record</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
+              <div>
+                <Label htmlFor="new-name">Name</Label>
+                <Input
+                  id="new-name"
+                  value={newAlumniData.name || ''}
+                  onChange={(e) => setNewAlumniData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreating(false);
+                    setNewAlumniData({
+                      name: '',
+                      role: '',
+                      companies: [] as string[],
+                      industry: [] as string[],
+                      location: '',
+                      family_branch: '',
+                      graduation_year: undefined,
+                      big_brother: '',
+                      little_brothers: [] as string[],
+                    });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Update Form */}
       {alumni && (
         <Card>
-          <CardHeader>
-            <CardTitle>Update Information for {alumni.name}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Update Alumni Information</CardTitle>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={loading}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Record
+            </Button>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -311,11 +524,11 @@ export default function UpdateAlumniPage() {
                 <div className="space-y-2">
                   <Label htmlFor="industry">Industry</Label>
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Current: {alumni.industry || 'Not set'}</p>
+                    <p className="text-sm text-muted-foreground">Current: {alumni.industry?.join(', ') || 'Not set'}</p>
                     <Input
                       id="industry"
-                      value={formData.industry}
-                      onChange={(e) => handleInputChange('industry', e.target.value)}
+                      value={formData.industry?.join(', ') || ''}
+                      onChange={(e) => handleInputChange('industry', e.target.value.split(',').map(i => i.trim()))}
                       placeholder="Ex. Technology"
                     />
                   </div>
@@ -408,7 +621,7 @@ export default function UpdateAlumniPage() {
                       name: '',
                       role: '',
                       companies: [],
-                      industry: '',
+                      industry: [],
                       location: '',
                       family_branch: '',
                       graduation_year: undefined,
@@ -432,6 +645,28 @@ export default function UpdateAlumniPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the alumni record
+              for {alumni?.name}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 } 

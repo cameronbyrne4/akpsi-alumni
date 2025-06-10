@@ -126,11 +126,28 @@ export default function Home() {
         setLoading(false)
         return
       }
+
+      // Debug: Check for duplicate IDs
+      if (data) {
+        const ids = data.map(alum => alum.id)
+        const uniqueIds = new Set(ids)
+        if (ids.length !== uniqueIds.size) {
+          console.warn('Found duplicate IDs in alumni data:', 
+            ids.filter(id => ids.indexOf(id) !== ids.lastIndexOf(id))
+          )
+        }
+      }
+
       console.log('Fetched alumni data:', data)
       if (reset) {
         setAlumni(data || [])
       } else {
-        setAlumni((prev) => [...prev, ...(data || [])])
+        // Ensure we don't add duplicates when appending
+        setAlumni(prev => {
+          const existingIds = new Set(prev.map(a => a.id))
+          const newAlumni = (data || []).filter(a => !existingIds.has(a.id))
+          return [...prev, ...newAlumni]
+        })
       }
       setHasMore((data?.length || 0) === PAGE_SIZE)
       setTotalCount(count ?? 0)
@@ -424,8 +441,8 @@ export default function Home() {
                     bigBrother={alum.big_brother}
                     littleBrothers={alum.little_brothers}
                     linkedinUrl={alum.linkedin_url}
-                    email={alum.email}
-                    phone={alum.phone}
+                    email={alum.emails}
+                    phone={alum.phones}
                     major={alum.major}
                     minor={alum.minor}
                   />

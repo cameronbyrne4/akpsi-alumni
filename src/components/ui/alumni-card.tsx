@@ -16,8 +16,8 @@ interface AlumniCardProps {
   bigBrother?: string | null
   littleBrothers?: string[] | null
   linkedinUrl?: string | null
-  email?: string | null
-  phone?: string | null
+  email?: string[] | null
+  phone?: string[] | null
   major?: string | null
   minor?: string | null
 }
