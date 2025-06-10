@@ -13,6 +13,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Typewriter } from '@/components/ui/typewriter'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
+import { BackgroundPaths } from '@/components/ui/background-paths'
 
 const PAGE_SIZE = 21;
 
@@ -265,8 +266,9 @@ export default function Home() {
   }, [aiQuery, previousSearches, setManualSearchMode])
 
   return (
-    <main className="min-h-screen bg-background flex flex-col">
-      <div className={hasSearched || manualSearchMode ? "container mx-auto px-4 py-16" : "flex flex-1 flex-col items-center justify-center"}>
+    <main className="min-h-screen bg-background flex flex-col relative">
+      <BackgroundPaths />
+      <div className={hasSearched || manualSearchMode ? "container mx-auto px-4 py-16 relative z-10" : "flex flex-1 flex-col items-center justify-center relative z-10"}>
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2">
             <h1 className="text-4xl font-bold text-primary mb-4 text-center">
@@ -443,8 +445,8 @@ export default function Home() {
                     linkedinUrl={alum.linkedin_url}
                     email={alum.emails}
                     phone={alum.phones}
-                    major={alum.major}
-                    minor={alum.minor}
+                    major={alum.majors}
+                    minor={alum.minors}
                     members={alumni.map(a => ({ id: a.id, name: a.name }))}
                   />
                 ))

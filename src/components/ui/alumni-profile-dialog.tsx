@@ -17,8 +17,8 @@ interface AlumniProfileDialogProps {
   linkedinUrl?: string | null
   email?: string[] | null
   phone?: string[] | null
-  major?: string | null
-  minor?: string | null
+  major?: string[] | null
+  minor?: string[] | null
   members?: Array<{ id: string; name: string }>
 }
 
@@ -173,10 +173,13 @@ export function AlumniProfileDialog({
                 <span>Graduation Year 🤷‍♂️</span>
               </div>
             )}
-            {major ? (
+            {major && major.length > 0 ? (
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
-                <span>{major}{minor ? `, ${minor}` : ''}</span>
+                <span>
+                  {major.join(', ')}
+                  {minor && minor.length > 0 ? `, Minor in ${minor.join(', ')}` : ''}
+                </span>
               </div>
             ) : (
               <div className="flex items-center gap-2">

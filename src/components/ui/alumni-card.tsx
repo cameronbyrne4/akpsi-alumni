@@ -18,8 +18,8 @@ interface AlumniCardProps {
   linkedinUrl?: string | null
   email?: string[] | null
   phone?: string[] | null
-  major?: string | null
-  minor?: string | null
+  major?: string[] | null
+  minor?: string[] | null
   members?: Array<{ id: string; name: string }>
 }
 
