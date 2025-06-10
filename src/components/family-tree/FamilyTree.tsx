@@ -80,7 +80,7 @@ export function FamilyTree() {
     };
 
     const hierarchy = d3.hierarchy(buildTree(root));
-    const tree = d3.tree<Member>().size([800, 500]);
+    const tree = d3.tree<Member>().size([800, 800]);
     return tree(hierarchy);
   };
 
@@ -91,7 +91,7 @@ export function FamilyTree() {
     svg.selectAll('*').remove();
 
     const width = 1000;
-    const height = 600;
+    const height = 1000;
     const margin = { top: 50, right: 50, bottom: 50, left: 50 };
 
     // Initialize zoom behavior
@@ -112,8 +112,8 @@ export function FamilyTree() {
     
     // Custom curve generator for organic lines
     const linkGenerator = d3.linkVertical<any, TreeNode>()
-      .x(d => d.x + margin.left + 200)
-      .y(d => d.y + margin.top + 50);
+      .x(d => d.x + margin.left)
+      .y(d => d.y + margin.top);
 
     container.selectAll('.link')
       .data(links)
@@ -133,7 +133,7 @@ export function FamilyTree() {
       .enter()
       .append('g')
       .attr('class', 'node')
-      .attr('transform', d => `translate(${d.x + margin.left + 200}, ${d.y + margin.top + 50})`)
+      .attr('transform', d => `translate(${d.x + margin.left}, ${d.y + margin.top})`)
       .on('click', (event, d) => {
         event.stopPropagation();
         setSelectedNode(d.data);
@@ -167,12 +167,34 @@ export function FamilyTree() {
     if (!selectedNode) {
       const bounds = container.node()?.getBBox();
       if (bounds && zoomRef.current) {
-        const centerX = width / 2 - bounds.x - bounds.width / 2;
-        const centerY = height / 2 - bounds.y - bounds.height / 2;
+        // First zoom in on root node
+        const rootNode = treeData.descendants()[0];
+        const initialX = width / 2 - (rootNode.x + margin.left);
+        const initialY = height / 2 - (rootNode.y + margin.top);
         
-        svg.transition()
-          .duration(750)
-          .call(zoomRef.current.transform, d3.zoomIdentity.translate(centerX, centerY));
+        if (zoomRef.current) {
+          // Calculate the transform to center on root node
+          const transform = d3.zoomIdentity
+            .translate(width / 2, height / 2)
+            .scale(1.5)
+            .translate(-(rootNode.x + margin.left), -(rootNode.y + margin.top));
+
+          svg.transition()
+            .duration(750)
+            .call(zoomRef.current.transform, transform);
+
+          // Then zoom out to show full tree after a delay
+          setTimeout(() => {
+            const centerX = width / 2 - bounds.x - bounds.width / 2;
+            const centerY = height / 2 - bounds.y - bounds.height / 2;
+            
+            if (zoomRef.current) {
+              svg.transition()
+                .duration(1000)
+                .call(zoomRef.current.transform, d3.zoomIdentity.translate(centerX, centerY).scale(0.8));
+            }
+          }, 1000);
+        }
       }
     }
   };
@@ -271,7 +293,15 @@ export function FamilyTree() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div
+      className="min-h-screen p-6"
+      style={{
+        backgroundColor: '#fff',
+        backgroundImage: 'radial-gradient(circle, #e5e7eb 1.5px, transparent 1.5px)',
+        backgroundSize: '32px 32px',
+        backgroundPosition: '0 0',
+      }}
+    >
       <div className="max-w-7xl mx-auto">
         {/* Tree Visualization */}
         <div className="relative overflow-hidden rounded-lg" onClick={() => setSelectedNode(null)}>
@@ -283,8 +313,8 @@ export function FamilyTree() {
             <svg
               ref={svgRef}
               width="100%"
-              height="600"
-              viewBox="0 0 1000 600"
+              height="1000"
+              viewBox="0 0 1000 1000"
               className="cursor-move"
             />
           )}
@@ -308,8 +338,16 @@ export function FamilyTree() {
             </div>
           </div>
 
-          {/* Navigation instructions */}
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-600 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
+          {/* Navigation instructions - vertically centered on left edge */}
+          <div
+            className="absolute text-sm text-slate-600 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg"
+            style={{
+              top: '50%',
+              left: '2rem',
+              transform: 'translateY(-50%)',
+              zIndex: 10,
+            }}
+          >
             <div className="font-medium mb-1">Navigation:</div>
             <div>• Mouse wheel: Zoom in/out</div>
             <div>• Click & drag: Pan around</div>
