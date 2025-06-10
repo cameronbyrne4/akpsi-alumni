@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select2';
 import { useToast } from '@/components/ui/use-toast';
+import { Toaster } from '@/components/ui/toaster';
 import { Search } from 'lucide-react';
 
 interface Member {
@@ -100,6 +101,7 @@ export default function FamilyTreeAdmin() {
       toast({
         title: 'Success',
         description: 'Member added to family successfully',
+        className: 'bg-green-50 border-green-200 text-green-800',
       });
 
       const { data: updatedMembers } = await supabase
@@ -165,6 +167,7 @@ export default function FamilyTreeAdmin() {
       toast({
         title: 'Success',
         description: 'Family relationship updated successfully',
+        className: 'bg-green-50 border-green-200 text-green-800',
       });
 
       fetchFamilyData();
@@ -182,6 +185,7 @@ export default function FamilyTreeAdmin() {
 
   return (
     <div className="container mx-auto p-6">
+      <Toaster />
       <h1 className="text-3xl font-bold mb-6">Family Tree Management</h1>
       
       <div className="mb-6 flex justify-between items-center">
