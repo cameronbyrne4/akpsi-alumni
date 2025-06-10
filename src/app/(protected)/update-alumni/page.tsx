@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Alumni } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,35 @@ export default function UpdateAlumniPage() {
     big_brother: '',
     little_brothers: [] as string[],
   });
+  const [bigBrotherName, setBigBrotherName] = useState<string>('');
+  const [allAlumni, setAllAlumni] = useState<Array<{ id: string; name: string }>>([]);
+
+  // Fetch all alumni names for lookup
+  useEffect(() => {
+    const fetchAllAlumni = async () => {
+      const { data, error } = await supabase
+        .from('alumni')
+        .select('id, name');
+      
+      if (!error && data) {
+        setAllAlumni(data);
+      }
+    };
+    fetchAllAlumni();
+  }, []);
+
+  // Get name from ID
+  const getNameFromId = (id: string | null) => {
+    if (!id) return '';
+    const alum = allAlumni.find(a => a.id === id);
+    return alum?.name || '';
+  };
+
+  // Get ID from name
+  const getIdFromName = (name: string) => {
+    const alum = allAlumni.find(a => a.name.toLowerCase() === name.toLowerCase());
+    return alum?.id || null;
+  };
 
   const validateSearchQuery = (query: string) => {
     if (!query.trim()) {
@@ -87,6 +116,8 @@ export default function UpdateAlumniPage() {
           big_brother: '',
           little_brothers: [],
         });
+        // Set the big brother name for display
+        setBigBrotherName(getNameFromId(data.big_brother));
       } else {
         setSearchError('No alumni found with that name');
       }
@@ -113,7 +144,7 @@ export default function UpdateAlumniPage() {
     
     const { data, error } = await supabase
       .from('alumni')
-      .select('name')
+      .select('id, name')
       .ilike('name', name)
       .single();
 
@@ -185,13 +216,16 @@ export default function UpdateAlumniPage() {
       const isNameValid = await validateName(formData.name);
       if (!isNameValid) return;
     }
-    if (formData.big_brother) {
-      const isBigBrotherValid = await validateBigBrother(formData.big_brother);
+    if (bigBrotherName) {
+      const isBigBrotherValid = await validateBigBrother(bigBrotherName);
       if (!isBigBrotherValid) return;
     }
 
     setLoading(true);
     try {
+      // Convert big brother name to ID
+      const bigBrotherId = getIdFromName(bigBrotherName);
+
       // Create update object with only changed fields and required fields
       const updateData = {
         ...formData,
@@ -203,6 +237,7 @@ export default function UpdateAlumniPage() {
         family_branch: formData.family_branch || alumni.family_branch,
         graduation_year: formData.graduation_year || alumni.graduation_year,
         location: formData.location || alumni.location,
+        big_brother: bigBrotherId || null,
         // Keep existing values for boolean fields
         has_linkedin: alumni.has_linkedin,
         scraped: alumni.scraped,
@@ -230,6 +265,7 @@ export default function UpdateAlumniPage() {
       if (data) {
         setAlumni(data);
         setFormData(data);
+        setBigBrotherName(getNameFromId(data.big_brother));
       }
     } catch (error) {
       console.error('Error updating alumni:', error);
@@ -583,11 +619,14 @@ export default function UpdateAlumniPage() {
                 <div className="space-y-2">
                   <Label htmlFor="big_brother">Big Brother</Label>
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Current: {alumni.big_brother || 'Not set'}</p>
+                    <p className="text-sm text-muted-foreground">Current: {bigBrotherName || 'Not set'}</p>
                     <Input
                       id="big_brother"
-                      value={formData.big_brother}
-                      onChange={(e) => handleInputChange('big_brother', e.target.value)}
+                      value={bigBrotherName}
+                      onChange={(e) => {
+                        setBigBrotherName(e.target.value);
+                        handleInputChange('big_brother', e.target.value);
+                      }}
                       placeholder="Ex. John Smith"
                     />
                     {bigBrotherError && (

@@ -102,7 +102,6 @@ export default function FamilyTreeAdmin() {
         description: 'Member added to family successfully',
       });
 
-      // Refresh both lists without causing a full re-render
       const { data: updatedMembers } = await supabase
         .from('alumni')
         .select('*')
@@ -110,7 +109,6 @@ export default function FamilyTreeAdmin() {
       
       setMembers(updatedMembers || []);
 
-      // Update unassigned members list if we have a search active
       if (unassignedSearch.trim()) {
         const { data: updatedUnassigned } = await supabase
           .from('alumni')
@@ -135,18 +133,18 @@ export default function FamilyTreeAdmin() {
     if (!selectedMember || !bigBrother) return;
 
     try {
-      // Find the big brother's ID
+      // First, find the big brother's ID
       const bigBrotherMember = members.find(m => m.name === bigBrother);
       if (!bigBrotherMember) {
         toast({
           title: 'Error',
-          description: 'Big brother not found in the family',
+          description: 'Big brother not found in family',
           variant: 'destructive',
         });
         return;
       }
 
-      // Update the member's big brother
+      // Update the selected member's big brother to the big brother's ID
       const { error } = await supabase
         .from('alumni')
         .update({ big_brother: bigBrotherMember.id })
@@ -169,7 +167,6 @@ export default function FamilyTreeAdmin() {
         description: 'Family relationship updated successfully',
       });
 
-      // Refresh the data
       fetchFamilyData();
       setSelectedMember(null);
       setBigBrother('');
@@ -187,25 +184,25 @@ export default function FamilyTreeAdmin() {
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Family Tree Management</h1>
       
-      {/* Family Selector */}
-      <div className="mb-6">
-        <Label>Select Family</Label>
-        <Select value={selectedFamily} onValueChange={(value) => setSelectedFamily(value as FamilyBranch)}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Choose a family" />
-          </SelectTrigger>
-          <SelectContent>
-            {FAMILY_BRANCHES.map((family) => (
-              <SelectItem key={family} value={family}>
-                {family} Family
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <Label>Select Family</Label>
+          <Select value={selectedFamily} onValueChange={(value) => setSelectedFamily(value as FamilyBranch)}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Choose a family" />
+            </SelectTrigger>
+            <SelectContent>
+              {FAMILY_BRANCHES.map((family) => (
+                <SelectItem key={family} value={family}>
+                  {family} Family
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Members List */}
         <Card>
           <CardHeader>
             <CardTitle>Family Members</CardTitle>
@@ -216,7 +213,7 @@ export default function FamilyTreeAdmin() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
                 {members.map((member) => (
                   <div
                     key={member.id}
@@ -238,7 +235,6 @@ export default function FamilyTreeAdmin() {
           </CardContent>
         </Card>
 
-        {/* Update Form */}
         <Card>
           <CardHeader>
             <CardTitle>Update Family Relationship</CardTitle>
@@ -292,7 +288,6 @@ export default function FamilyTreeAdmin() {
         </Card>
       </div>
 
-      {/* Unassigned Members Section */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Add Unassigned Members</CardTitle>

@@ -20,6 +20,7 @@ interface AlumniCardProps {
   phone?: string[] | null
   major?: string | null
   minor?: string | null
+  members?: Array<{ id: string; name: string }>
 }
 
 export function AlumniCard({
@@ -37,6 +38,7 @@ export function AlumniCard({
   phone,
   major,
   minor,
+  members = [],
 }: AlumniCardProps) {
   // Get initials from name
   const initials = name
@@ -104,6 +106,7 @@ export function AlumniCard({
         phone={phone}
         major={major}
         minor={minor}
+        members={members}
       />
     </Dialog>
   )

@@ -445,6 +445,7 @@ export default function Home() {
                     phone={alum.phones}
                     major={alum.major}
                     minor={alum.minor}
+                    members={alumni.map(a => ({ id: a.id, name: a.name }))}
                   />
                 ))
               )}

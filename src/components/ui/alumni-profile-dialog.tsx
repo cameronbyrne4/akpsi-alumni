@@ -19,6 +19,7 @@ interface AlumniProfileDialogProps {
   phone?: string[] | null
   major?: string | null
   minor?: string | null
+  members?: Array<{ id: string; name: string }>
 }
 
 export function AlumniProfileDialog({
@@ -36,6 +37,7 @@ export function AlumniProfileDialog({
   phone = [],
   major,
   minor,
+  members = [],
 }: AlumniProfileDialogProps) {
   // Get initials from name
   const initials = name
@@ -43,6 +45,12 @@ export function AlumniProfileDialog({
     .map((n) => n[0])
     .join('')
     .toUpperCase()
+
+  // Helper function to get name from ID
+  const getNameFromId = (id: string) => {
+    const member = members.find(m => m.id === id);
+    return member?.name || 'Unknown';
+  };
 
   return (
     <DialogContent className="max-w-2xl">
@@ -197,7 +205,7 @@ export function AlumniProfileDialog({
             {bigBrother ? (
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Big:</span>
-                <span>{bigBrother}</span>
+                <span>{getNameFromId(bigBrother)}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -208,7 +216,7 @@ export function AlumniProfileDialog({
             {littleBrothers && littleBrothers.length > 0 ? (
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Littles:</span>
-                <span>{littleBrothers.join(', ')}</span>
+                <span>{littleBrothers.map(id => getNameFromId(id)).join(', ')}</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">

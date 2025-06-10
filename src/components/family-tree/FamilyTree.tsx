@@ -64,20 +64,13 @@ export function FamilyTree() {
     const familyMembers = members.filter(member => member.family_branch === familyName);
     if (familyMembers.length === 0) return null;
 
-    // Create a map of names to IDs for lookup
-    const nameToId = new Map(familyMembers.map(member => [member.name, member.id]));
-
     // Find root (member with no big_brother)
     const root = familyMembers.find(member => !member.big_brother);
     if (!root) return null;
 
     const buildTree = (member: Member): any => {
       const children = familyMembers
-        .filter(m => {
-          // If big_brother is a name, look up the ID
-          const bigBrotherId = nameToId.get(m.big_brother || '');
-          return bigBrotherId === member.id;
-        })
+        .filter(m => m.big_brother === member.id)
         .map(buildTree);
       
       return {
@@ -278,10 +271,7 @@ export function FamilyTree() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-6" style={{
-      backgroundImage: `radial-gradient(#e2e8f0 2px, transparent 2px)`,
-      backgroundSize: '40px 40px'
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Tree Visualization */}
         <div className="relative overflow-hidden rounded-lg" onClick={() => setSelectedNode(null)}>
@@ -351,7 +341,7 @@ export function FamilyTree() {
                       {selectedNode.big_brother ? (
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground">Big Brother:</span>
-                          <span>{selectedNode.big_brother}</span>
+                          <span>{members.find(m => m.id === selectedNode.big_brother)?.name || 'Unknown'}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
@@ -362,7 +352,11 @@ export function FamilyTree() {
                       {selectedNode.little_brothers && selectedNode.little_brothers.length > 0 ? (
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground">Little Brothers:</span>
-                          <span>{selectedNode.little_brothers.join(', ')}</span>
+                          <span>
+                            {selectedNode.little_brothers
+                              .map(id => members.find(m => m.id === id)?.name || 'Unknown')
+                              .join(', ')}
+                          </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
