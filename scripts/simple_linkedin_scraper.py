@@ -11,6 +11,18 @@ import time
 import json
 import re
 import random
+from supabase import create_client, Client
+from dotenv import load_dotenv
+import sys
+
+# Load environment variables
+load_dotenv('.env.local')
+
+# Initialize Supabase client
+supabase: Client = create_client(
+    os.getenv('NEXT_PUBLIC_SUPABASE_URL', ''),
+    os.getenv('NEXT_PUBLIC_SUPABASE_ANON_KEY', '')
+)
 
 def sanitize_filename(name):
     # Remove invalid characters from filename
@@ -84,51 +96,66 @@ def random_human_scroll_and_mouse(driver):
     except Exception:
         pass
 
-def scrape_linkedin_profile(url, email, password):
-    chrome_options = Options()
-    chrome_options.add_argument("--start-maximized")
-    chrome_options.add_argument("--disable-notifications")
-    driver = webdriver.Chrome(options=chrome_options)
-    try:
-        actions.login(driver, email, password)
-        random_human_delay(3, 7)
-        driver.get(url)
-        random_human_delay(3, 7)
-        random_human_scroll_and_mouse(driver)
-        person = Person(url, driver=driver)
-        alumni_data = {
-            "name": person.name,
-            "linkedin_url": url,
-            "picture_url": person.picture if hasattr(person, 'picture') else None,
-            "bio": clean_text(person.about),
-            "role": person.job_title,
-            "companies": [clean_company_name(exp.institution_name) for exp in person.experiences],
-            "current_location": None,
-            "has_linkedin": True,
-            "scraped": True,
-            "manually_verified": False,
-            "created_at": datetime.now().isoformat(),
-            "experiences": []
-        }
-        for experience in person.experiences:
-            location = getattr(experience, 'location', None)
-            if not alumni_data["current_location"] and location:
-                alumni_data["current_location"] = location
-            experience_data = {
-                "position": experience.position_title,
-                "company": clean_company_name(experience.institution_name),
-                "location": location,
-                "duration": f"{experience.from_date} - Present" if not experience.to_date else f"{experience.from_date} to {experience.to_date}",
-                "description": clean_text(experience.description) if experience.description else None
-            }
-            alumni_data["experiences"].append(experience_data)
-        print(f"Scraped: {alumni_data['name']} ({url})")
-        return alumni_data
-    except Exception as e:
-        print(f"Error scraping {url}: {e}")
+def clean_linkedin_url(url: str) -> str:
+    """Clean and format LinkedIn URL."""
+    if not url:
         return None
-    finally:
-        driver.quit()
+    
+    # Remove any leading/trailing whitespace
+    url = url.strip()
+    
+    # If it's just a username, add the full URL
+    if url.startswith('/'):
+        url = url[1:]  # Remove leading slash
+    if not url.startswith('http'):
+        url = f"https://www.linkedin.com/in/{url}"
+    
+    # Remove trailing slash if present
+    if url.endswith('/'):
+        url = url[:-1]
+    
+    return url
+
+def get_unscraped_profiles() -> list:
+    """Fetch unscraped LinkedIn profiles from Supabase."""
+    try:
+        response = supabase.table('alumni').select('id, name, linkedin_url').eq('scraped', False).not_('linkedin_url', 'is', None).execute()
+        
+        if response.error:
+            print(f"Error fetching profiles: {response.error}")
+            return []
+            
+        profiles = response.data
+        print(f"\nFound {len(profiles)} unscraped profiles with LinkedIn URLs")
+        
+        # Clean and validate URLs
+        valid_profiles = []
+        for profile in profiles:
+            if profile['linkedin_url']:
+                clean_url = clean_linkedin_url(profile['linkedin_url'])
+                if clean_url:
+                    valid_profiles.append({
+                        'id': profile['id'],
+                        'name': profile['name'],
+                        'linkedin_url': clean_url
+                    })
+        
+        print(f"Valid LinkedIn URLs: {len(valid_profiles)}")
+        return valid_profiles
+        
+    except Exception as e:
+        print(f"Error in get_unscraped_profiles: {e}")
+        return []
+
+def update_scraped_status(profile_id: str, success: bool = True):
+    """Update the scraped status in Supabase."""
+    try:
+        supabase.table('alumni').update({
+            'scraped': success,
+            'manually_verified': False
+        }).eq('id', profile_id).execute()
+    except Exception as e:
+        print(f"Error updating scraped status for {profile_id}: {e}")
 
 def main():
     email = os.getenv('LINKEDIN_EMAIL')
@@ -136,21 +163,140 @@ def main():
     if not email or not password:
         print("Please set LINKEDIN_EMAIL and LINKEDIN_PASSWORD environment variables")
         return
-    linkedin_urls = [
-        "https://www.linkedin.com/in/roy-lee-goat/",
-        "https://www.linkedin.com/in/williamhgates",
-        "https://www.linkedin.com/in/cameronbyrne00"
-        # Add more URLs here
+
+    # Test with manual URLs first
+    test_profiles = [
+        {
+            'id': 'test1',
+            'name': 'Test Profile 1',
+            'linkedin_url': 'https://www.linkedin.com/in/cameronbyrne00'
+        },
+        {
+            'id': 'test2',
+            'name': 'Test Profile 2',
+            'linkedin_url': 'https://www.linkedin.com/in/williamhgates'
+        }
     ]
-    mega_data = []
-    for url in linkedin_urls:
-        data = scrape_linkedin_profile(url, email, password)
-        if data:
-            mega_data.append(data)
-        random_human_delay(4, 9)
-    with open("data/alumni_mega.json", "w", encoding="utf-8") as f:
-        json.dump(mega_data, f, indent=2, ensure_ascii=False)
-    print("\nAll data saved to data/alumni_mega.json")
+
+    # Uncomment this section when ready to scrape from database
+    """
+    # Get unscraped profiles from database
+    profiles = get_unscraped_profiles()
+    if not profiles:
+        print("No unscraped profiles found!")
+        return
+    """
+    
+    # Use test profiles for now
+    profiles = test_profiles
+
+    # Show profiles for review
+    print("\nProfiles to be scraped:")
+    for i, profile in enumerate(profiles, 1):
+        print(f"{i}. {profile['name']} - {profile['linkedin_url']}")
+    
+    # Ask for confirmation
+    response = input("\nDo you want to proceed with scraping these profiles? (y/n): ")
+    if response.lower() != 'y':
+        print("Scraping cancelled.")
+        return
+
+    # Initialize Chrome options
+    chrome_options = Options()
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--disable-notifications")
+    
+    # Store all scraped data
+    all_scraped_data = []
+    
+    # Process in batches of 10
+    BATCH_SIZE = 10
+    
+    # Single browser session for all profiles
+    driver = webdriver.Chrome(options=chrome_options)
+    try:
+        # Login once at the start
+        print("Logging in to LinkedIn...")
+        actions.login(driver, email, password)
+        time.sleep(random.uniform(3, 5))
+        
+        # Process profiles in batches
+        for i in range(0, len(profiles), BATCH_SIZE):
+            batch = profiles[i:i + BATCH_SIZE]
+            print(f"\nProcessing batch {i//BATCH_SIZE + 1} of {(len(profiles) + BATCH_SIZE - 1)//BATCH_SIZE}")
+            
+            # Process each profile in the batch
+            for profile in batch:
+                try:
+                    print(f"\nScraping {profile['name']}...")
+                    driver.get(profile['linkedin_url'])
+                    time.sleep(random.uniform(3, 5))
+                    
+                    # Random human-like behavior
+                    random_human_scroll_and_mouse(driver)
+                    
+                    # Scrape profile
+                    person = Person(profile['linkedin_url'], driver=driver)
+                    alumni_data = {
+                        "id": profile['id'],
+                        "name": person.name,
+                        "linkedin_url": profile['linkedin_url'],
+                        "picture_url": person.picture if hasattr(person, 'picture') else None,
+                        "bio": clean_text(person.about),
+                        "role": person.job_title,
+                        "companies": [clean_company_name(exp.institution_name) for exp in person.experiences],
+                        "current_location": None,
+                        "has_linkedin": True,
+                        "scraped": True,
+                        "manually_verified": False,
+                        "created_at": datetime.now().isoformat(),
+                        "experiences": []
+                    }
+                    
+                    # Process experiences
+                    for experience in person.experiences:
+                        location = getattr(experience, 'location', None)
+                        if not alumni_data["current_location"] and location:
+                            alumni_data["current_location"] = location
+                        experience_data = {
+                            "position": experience.position_title,
+                            "company": clean_company_name(experience.institution_name),
+                            "location": location,
+                            "duration": f"{experience.from_date} - Present" if not experience.to_date else f"{experience.from_date} to {experience.to_date}",
+                            "description": clean_text(experience.description) if experience.description else None
+                        }
+                        alumni_data["experiences"].append(experience_data)
+                    
+                    all_scraped_data.append(alumni_data)
+                    print(f"✅ Successfully scraped {profile['name']}")
+                    
+                except Exception as e:
+                    print(f"❌ Error scraping {profile['name']}: {e}")
+                
+                # Random delay between profiles
+                time.sleep(random.uniform(4, 8))
+            
+            # Save progress after each batch
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_file = f"data/alumni_mega_{timestamp}.json"
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(all_scraped_data, f, indent=2, ensure_ascii=False)
+            print(f"\nProgress saved to {output_file}")
+            
+            # If there are more batches, pause for review
+            if i + BATCH_SIZE < len(profiles):
+                print("\nBatch completed. Review the data and press Enter to continue with the next batch...")
+                input()
+                print("Continuing with next batch...")
+            
+    except Exception as e:
+        print(f"❌ Error during scraping: {e}")
+    finally:
+        driver.quit()
+    
+    print("\nScraping completed!")
+    print(f"Total profiles scraped: {len(all_scraped_data)}")
+    print(f"Final data saved to {output_file}")
 
 if __name__ == "__main__":
     main() 
