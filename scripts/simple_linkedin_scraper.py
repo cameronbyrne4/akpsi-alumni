@@ -148,9 +148,9 @@ def main():
         if data:
             mega_data.append(data)
         random_human_delay(4, 9)
-    with open("alumni_mega.json", "w", encoding="utf-8") as f:
+    with open("data/alumni_mega.json", "w", encoding="utf-8") as f:
         json.dump(mega_data, f, indent=2, ensure_ascii=False)
-    print("\nAll data saved to alumni_mega.json")
+    print("\nAll data saved to data/alumni_mega.json")
 
 if __name__ == "__main__":
     main() 
