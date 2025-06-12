@@ -119,12 +119,14 @@ def clean_linkedin_url(url: str) -> str:
 def get_unscraped_profiles() -> list:
     """Fetch unscraped LinkedIn profiles from Supabase."""
     try:
-        response = supabase.table('alumni').select('id, name, linkedin_url').eq('scraped', False).not_('linkedin_url', 'is', None).execute()
+        # Fix the query syntax
+        response = supabase.table('alumni') \
+            .select('id, name, linkedin_url') \
+            .eq('scraped', False) \
+            .not_.is_('linkedin_url', 'null') \
+            .execute()
         
-        if response.error:
-            print(f"Error fetching profiles: {response.error}")
-            return []
-            
+        # The response data is directly in response.data
         profiles = response.data
         print(f"\nFound {len(profiles)} unscraped profiles with LinkedIn URLs")
         
@@ -145,10 +147,63 @@ def get_unscraped_profiles() -> list:
         
     except Exception as e:
         print(f"Error in get_unscraped_profiles: {e}")
+        print("Full response:", response)  # Add this to see what we're getting
         return []
 
-def update_scraped_status(profile_id: str, success: bool = True):
-    """Update the scraped status in Supabase."""
+# Claude function for putting info back into Supabase:
+def save_profile_to_supabase(profile_id: str, person, linkedin_url: str):
+    """Save scraped profile data to Supabase."""
+    try:
+        # Prepare companies array
+        companies = [clean_company_name(exp.institution_name) for exp in person.experiences]
+        
+        # Get current location from most recent experience
+        current_location = None
+        for experience in person.experiences:
+            location = getattr(experience, 'location', None)
+            if location:
+                current_location = location
+                break
+        
+        # Prepare career history JSON
+        career_history = {
+            "bio": clean_text(person.about),
+            "picture_url": person.picture if hasattr(person, 'picture') else None,
+            "experiences": []
+        }
+        
+        # Process experiences for career_history
+        for experience in person.experiences:
+            experience_data = {
+                "position": experience.position_title,
+                "company": clean_company_name(experience.institution_name),
+                "location": getattr(experience, 'location', None),
+                "duration": f"{experience.from_date} - Present" if not experience.to_date else f"{experience.from_date} to {experience.to_date}",
+                "description": clean_text(experience.description) if experience.description else None
+            }
+            career_history["experiences"].append(experience_data)
+        
+        # Update the alumni record
+        update_data = {
+            'role': person.job_title,
+            'companies': companies,
+            'location': current_location,
+            'has_linkedin': True,
+            'scraped': True,
+            'manually_verified': False,
+            'career_history': career_history
+        }
+        
+        response = supabase.table('alumni').update(update_data).eq('id', profile_id).execute()
+        print(f"✅ Successfully saved {person.name} to database")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error saving to database: {e}")
+        return False
+
+def update_scraped_status_only(profile_id: str, success: bool = True):
+    """Update only the scraped status in case of errors."""
     try:
         supabase.table('alumni').update({
             'scraped': success,
@@ -190,22 +245,11 @@ def main():
         print("Please set LINKEDIN_EMAIL and LINKEDIN_PASSWORD environment variables")
         return
 
-    # Test with manual URLs first
-    test_profiles = [
-        {
-            'id': 'test1',
-            'name': 'Test Profile 1',
-            'linkedin_url': 'https://www.linkedin.com/in/cameronbyrne00'
-        },
-        {
-            'id': 'test2',
-            'name': 'Test Profile 2',
-            'linkedin_url': 'https://www.linkedin.com/in/williamhgates'
-        }
-    ]
-
-    # Use test profiles for now
-    profiles = test_profiles
+    # Get unscraped profiles from database
+    profiles = get_unscraped_profiles()
+    if not profiles:
+        print("No unscraped profiles found!")
+        return
 
     # Show profiles for review
     print("\nProfiles to be scraped:")
@@ -302,8 +346,18 @@ def main():
                     # Random human-like behavior
                     random_human_scroll_and_mouse(driver)
                     
-                    # Scrape profile
+                    # Claude function number 2 - Scrape profile 
                     person = Person(profile['linkedin_url'], driver=driver)
+
+                    # Save to Supabase
+                    if save_profile_to_supabase(profile['id'], person, profile['linkedin_url']):
+                        print(f"✅ Successfully scraped and saved {profile['name']}")
+                    else:
+                        print(f"⚠️ Scraped {profile['name']} but failed to save to database")
+                        # Still mark as scraped even if database save failed
+                        update_scraped_status_only(profile['id'], True)
+
+                    # Keep backup JSON data
                     alumni_data = {
                         "id": profile['id'],
                         "name": person.name,
@@ -319,8 +373,8 @@ def main():
                         "created_at": datetime.now().isoformat(),
                         "experiences": []
                     }
-                    
-                    # Process experiences
+
+                    # Process experiences for JSON backup
                     for experience in person.experiences:
                         location = getattr(experience, 'location', None)
                         if not alumni_data["current_location"] and location:
@@ -333,13 +387,14 @@ def main():
                             "description": clean_text(experience.description) if experience.description else None
                         }
                         alumni_data["experiences"].append(experience_data)
-                    
+
                     all_scraped_data.append(alumni_data)
-                    print(f"✅ Successfully scraped {profile['name']}")
                     
                 except Exception as e:
                     print(f"❌ Error scraping {profile['name']}: {e}")
                     print("Error details:", str(e))
+                    # Mark as failed in database
+                    update_scraped_status_only(profile['id'], False)
                 
                 # Random delay between profiles
                 time.sleep(random.uniform(4, 8))
