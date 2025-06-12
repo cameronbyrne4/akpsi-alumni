@@ -157,6 +157,32 @@ def update_scraped_status(profile_id: str, success: bool = True):
     except Exception as e:
         print(f"Error updating scraped status for {profile_id}: {e}")
 
+def save_cookies(driver, filename="linkedin_cookies.json"):
+    """Save cookies to a file."""
+    cookies = driver.get_cookies()
+    with open(filename, 'w') as f:
+        json.dump(cookies, f)
+    print(f"Cookies saved to {filename}")
+
+def load_cookies(driver, filename="linkedin_cookies.json"):
+    """Load cookies from a file."""
+    try:
+        with open(filename, 'r') as f:
+            cookies = json.load(f)
+        for cookie in cookies:
+            try:
+                driver.add_cookie(cookie)
+            except Exception as e:
+                print(f"Error adding cookie: {e}")
+        print("Cookies loaded successfully")
+        return True
+    except FileNotFoundError:
+        print("No cookie file found")
+        return False
+    except Exception as e:
+        print(f"Error loading cookies: {e}")
+        return False
+
 def main():
     email = os.getenv('LINKEDIN_EMAIL')
     password = os.getenv('LINKEDIN_PASSWORD')
@@ -210,10 +236,21 @@ def main():
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(300)  # 5 minute timeout for page loads
         
-        # Login once at the start
-        print("Logging in to LinkedIn...")
-        actions.login(driver, email, password)
-        time.sleep(random.uniform(3, 5))
+        # Try to load existing cookies first
+        driver.get("https://www.linkedin.com")
+        time.sleep(2)
+        
+        if not load_cookies(driver):
+            # If no cookies exist, login normally
+            print("Logging in to LinkedIn...")
+            actions.login(driver, email, password)
+            time.sleep(random.uniform(3, 5))
+            # Save cookies after successful login
+            save_cookies(driver)
+        else:
+            # Refresh page to apply cookies
+            driver.refresh()
+            time.sleep(3)
         
         # Process profiles in batches
         for i in range(0, len(profiles), BATCH_SIZE):
@@ -234,9 +271,16 @@ def main():
                             driver.quit()
                         driver = webdriver.Chrome(options=chrome_options)
                         driver.set_page_load_timeout(300)  # 5 minute timeout
-                        print("Logging in again...")
-                        actions.login(driver, email, password)
-                        time.sleep(random.uniform(3, 5))
+                        driver.get("https://www.linkedin.com")
+                        time.sleep(2)
+                        if not load_cookies(driver):
+                            print("Logging in again...")
+                            actions.login(driver, email, password)
+                            time.sleep(random.uniform(3, 5))
+                            save_cookies(driver)
+                        else:
+                            driver.refresh()
+                            time.sleep(3)
                     
                     driver.get(profile['linkedin_url'])
                     time.sleep(random.uniform(3, 5))
@@ -251,6 +295,8 @@ def main():
                             time.sleep(2)  # Check every 2 seconds
                         
                         print("CAPTCHA solved! Continuing with scraping...")
+                        # Save cookies after solving CAPTCHA
+                        save_cookies(driver)
                         time.sleep(2)  # Give a moment for the page to load after CAPTCHA
                     
                     # Random human-like behavior
