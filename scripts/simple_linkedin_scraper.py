@@ -178,15 +178,6 @@ def main():
         }
     ]
 
-    # Uncomment this section when ready to scrape from database
-    """
-    # Get unscraped profiles from database
-    profiles = get_unscraped_profiles()
-    if not profiles:
-        print("No unscraped profiles found!")
-        return
-    """
-    
     # Use test profiles for now
     profiles = test_profiles
 
@@ -208,13 +199,17 @@ def main():
     
     # Store all scraped data
     all_scraped_data = []
+    output_file = None  # Initialize output_file
     
     # Process in batches of 10
     BATCH_SIZE = 10
     
     # Single browser session for all profiles
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = None
     try:
+        driver = webdriver.Chrome(options=chrome_options)
+        driver.set_page_load_timeout(300)  # 5 minute timeout for page loads
+        
         # Login once at the start
         print("Logging in to LinkedIn...")
         actions.login(driver, email, password)
@@ -229,8 +224,34 @@ def main():
             for profile in batch:
                 try:
                     print(f"\nScraping {profile['name']}...")
+                    
+                    # Check if browser is still responsive
+                    try:
+                        driver.current_url
+                    except Exception as e:
+                        print("Browser session lost, attempting to recover...")
+                        if driver:
+                            driver.quit()
+                        driver = webdriver.Chrome(options=chrome_options)
+                        driver.set_page_load_timeout(300)  # 5 minute timeout
+                        print("Logging in again...")
+                        actions.login(driver, email, password)
+                        time.sleep(random.uniform(3, 5))
+                    
                     driver.get(profile['linkedin_url'])
                     time.sleep(random.uniform(3, 5))
+                    
+                    # Check for CAPTCHA
+                    if "checkpoint" in driver.current_url or "challenge" in driver.current_url:
+                        print("\n⚠️ CAPTCHA detected! Please solve it manually.")
+                        print("The script will automatically continue once the CAPTCHA is solved...")
+                        
+                        # Wait for CAPTCHA to be solved (URL will change)
+                        while "checkpoint" in driver.current_url or "challenge" in driver.current_url:
+                            time.sleep(2)  # Check every 2 seconds
+                        
+                        print("CAPTCHA solved! Continuing with scraping...")
+                        time.sleep(2)  # Give a moment for the page to load after CAPTCHA
                     
                     # Random human-like behavior
                     random_human_scroll_and_mouse(driver)
@@ -272,6 +293,7 @@ def main():
                     
                 except Exception as e:
                     print(f"❌ Error scraping {profile['name']}: {e}")
+                    print("Error details:", str(e))
                 
                 # Random delay between profiles
                 time.sleep(random.uniform(4, 8))
@@ -291,12 +313,20 @@ def main():
             
     except Exception as e:
         print(f"❌ Error during scraping: {e}")
+        print("Error details:", str(e))
     finally:
-        driver.quit()
+        if driver:
+            try:
+                driver.quit()
+            except:
+                pass
     
     print("\nScraping completed!")
     print(f"Total profiles scraped: {len(all_scraped_data)}")
-    print(f"Final data saved to {output_file}")
+    if output_file:
+        print(f"Final data saved to {output_file}")
+    else:
+        print("No data was saved due to errors.")
 
 if __name__ == "__main__":
     main() 
