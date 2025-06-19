@@ -73,25 +73,25 @@ def clean_company_name(company):
     # Remove employment type (e.g., "· Full-time", "· Part-time")
     return re.sub(r'\s*·\s*(Full-time|Part-time|Contract|Internship|Self-employed|Freelance)$', '', company)
 
-def random_human_delay(min_sec=2, max_sec=5):
+def random_human_delay(min_sec=1, max_sec=3):
     delay = random.uniform(min_sec, max_sec)
     time.sleep(delay)
 
 def random_human_scroll_and_mouse(driver):
-    # Random scroll
+    # Reduced random scroll
     scroll_height = driver.execute_script("return document.body.scrollHeight")
-    for _ in range(random.randint(2, 5)):
+    for _ in range(random.randint(1, 3)):  # Reduced from 2-5 to 1-3
         scroll_to = random.randint(0, scroll_height)
         driver.execute_script(f"window.scrollTo(0, {scroll_to});")
-        time.sleep(random.uniform(0.5, 1.5))
-    # Random mouse movement
+        time.sleep(random.uniform(0.3, 0.8))  # Reduced from 0.5-1.5 to 0.3-0.8
+    # Reduced random mouse movement
     try:
         action = ActionChains(driver)
-        for _ in range(random.randint(2, 5)):
+        for _ in range(random.randint(1, 3)):  # Reduced from 2-5 to 1-3
             x = random.randint(0, 800)
             y = random.randint(0, 600)
             action.move_by_offset(x, y).perform()
-            time.sleep(random.uniform(0.2, 0.7))
+            time.sleep(random.uniform(0.1, 0.4))  # Reduced from 0.2-0.7 to 0.1-0.4
             action.move_by_offset(-x, -y).perform()
     except Exception:
         pass
@@ -104,11 +104,45 @@ def clean_linkedin_url(url: str) -> str:
     # Remove any leading/trailing whitespace
     url = url.strip()
     
+    # Check if it's a valid LinkedIn URL
+    if not url.startswith('http'):
+        # If it doesn't start with http, it might be a username
+        if '/' in url or ' ' in url or len(url) < 3:
+            # Invalid format - contains spaces, slashes, or too short
+            return None
+        url = f"https://www.linkedin.com/in/{url}"
+    
+    # Validate that it's actually a LinkedIn URL
+    if 'linkedin.com' not in url.lower():
+        return None
+    
     # If it's just a username, add the full URL
     if url.startswith('/'):
         url = url[1:]  # Remove leading slash
     if not url.startswith('http'):
         url = f"https://www.linkedin.com/in/{url}"
+    
+    # Convert /pub/ URLs to /in/ URLs
+    if '/pub/' in url:
+        # Extract the parts: /pub/name/id1/id2/id3
+        parts = url.split('/')
+        if len(parts) >= 7 and parts[3] == 'pub':
+            name = parts[4]
+            id1 = parts[5]
+            id2 = parts[6]
+            id3 = parts[7] if len(parts) > 7 else ''
+            
+            # Convert to /in/name-id3id2id1/
+            converted_url = f"https://www.linkedin.com/in/{name}-{id3}{id2}{id1}/"
+            print(f"Converted /pub/ URL: {url} → {converted_url}")
+            url = converted_url
+    
+    # Clean mobile app parameters and UTM tracking codes
+    if '?' in url:
+        # Remove everything after the question mark (query parameters)
+        base_url = url.split('?')[0]
+        print(f"Cleaned mobile/UTM parameters: {url} → {base_url}")
+        url = base_url
     
     # Remove trailing slash if present
     if url.endswith('/'):
@@ -154,6 +188,10 @@ def get_unscraped_profiles() -> list:
 def save_profile_to_supabase(profile_id: str, person, linkedin_url: str):
     """Save scraped profile data to Supabase."""
     try:
+        # Check if we have a valid LinkedIn URL
+        clean_url = clean_linkedin_url(linkedin_url)
+        has_valid_linkedin = clean_url is not None
+        
         # Prepare companies array
         companies = [clean_company_name(exp.institution_name) for exp in person.experiences]
         
@@ -188,14 +226,18 @@ def save_profile_to_supabase(profile_id: str, person, linkedin_url: str):
             'role': person.job_title,
             'companies': companies,
             'location': current_location,
-            'has_linkedin': True,
+            'has_linkedin': has_valid_linkedin,  # Only true if we have a valid LinkedIn URL
             'scraped': True,
             'manually_verified': False,
             'career_history': career_history
         }
         
+        # Only update linkedin_url if it's valid
+        if has_valid_linkedin:
+            update_data['linkedin_url'] = clean_url
+        
         response = supabase.table('alumni').update(update_data).eq('id', profile_id).execute()
-        print(f"✅ Successfully saved {person.name} to database")
+        print(f"✅ Successfully saved {person.name} to database (has_linkedin: {has_valid_linkedin})")
         return True
         
     except Exception as e:
@@ -264,6 +306,7 @@ def main():
 
     # Initialize Chrome options
     chrome_options = Options()
+    # chrome_options.add_argument("--headless")  # Run in background (DISABLED for debugging)
     chrome_options.add_argument("--start-maximized")
     chrome_options.add_argument("--disable-notifications")
     
@@ -271,146 +314,134 @@ def main():
     all_scraped_data = []
     output_file = None  # Initialize output_file
     
-    # Process in batches of 10
-    BATCH_SIZE = 10
-    
     # Single browser session for all profiles
     driver = None
     try:
         driver = webdriver.Chrome(options=chrome_options)
-        driver.set_page_load_timeout(300)  # 5 minute timeout for page loads
+        driver.set_page_load_timeout(120)  # Reduced from 300 to 120 seconds
         
         # Try to load existing cookies first
         driver.get("https://www.linkedin.com")
-        time.sleep(2)
+        time.sleep(1)  # Reduced from 2 to 1
         
         if not load_cookies(driver):
             # If no cookies exist, login normally
             print("Logging in to LinkedIn...")
             actions.login(driver, email, password)
-            time.sleep(random.uniform(3, 5))
+            time.sleep(random.uniform(2, 3))  # Reduced from 3-5 to 2-3
             # Save cookies after successful login
             save_cookies(driver)
         else:
             # Refresh page to apply cookies
             driver.refresh()
-            time.sleep(3)
+            time.sleep(2)  # Reduced from 3 to 2
         
-        # Process profiles in batches
-        for i in range(0, len(profiles), BATCH_SIZE):
-            batch = profiles[i:i + BATCH_SIZE]
-            print(f"\nProcessing batch {i//BATCH_SIZE + 1} of {(len(profiles) + BATCH_SIZE - 1)//BATCH_SIZE}")
-            
-            # Process each profile in the batch
-            for profile in batch:
-                try:
-                    print(f"\nScraping {profile['name']}...")
-                    
-                    # Check if browser is still responsive
-                    try:
-                        driver.current_url
-                    except Exception as e:
-                        print("Browser session lost, attempting to recover...")
-                        if driver:
-                            driver.quit()
-                        driver = webdriver.Chrome(options=chrome_options)
-                        driver.set_page_load_timeout(300)  # 5 minute timeout
-                        driver.get("https://www.linkedin.com")
-                        time.sleep(2)
-                        if not load_cookies(driver):
-                            print("Logging in again...")
-                            actions.login(driver, email, password)
-                            time.sleep(random.uniform(3, 5))
-                            save_cookies(driver)
-                        else:
-                            driver.refresh()
-                            time.sleep(3)
-                    
-                    driver.get(profile['linkedin_url'])
-                    time.sleep(random.uniform(3, 5))
-                    
-                    # Check for CAPTCHA
-                    if "checkpoint" in driver.current_url or "challenge" in driver.current_url:
-                        print("\n⚠️ CAPTCHA detected! Please solve it manually.")
-                        print("The script will automatically continue once the CAPTCHA is solved...")
-                        
-                        # Wait for CAPTCHA to be solved (URL will change)
-                        while "checkpoint" in driver.current_url or "challenge" in driver.current_url:
-                            time.sleep(2)  # Check every 2 seconds
-                        
-                        print("CAPTCHA solved! Continuing with scraping...")
-                        # Save cookies after solving CAPTCHA
-                        save_cookies(driver)
-                        time.sleep(2)  # Give a moment for the page to load after CAPTCHA
-                    
-                    # Random human-like behavior
-                    random_human_scroll_and_mouse(driver)
-                    
-                    # Claude function number 2 - Scrape profile 
-                    person = Person(profile['linkedin_url'], driver=driver)
-
-                    # Save to Supabase
-                    if save_profile_to_supabase(profile['id'], person, profile['linkedin_url']):
-                        print(f"✅ Successfully scraped and saved {profile['name']}")
-                    else:
-                        print(f"⚠️ Scraped {profile['name']} but failed to save to database")
-                        # Still mark as scraped even if database save failed
-                        update_scraped_status_only(profile['id'], True)
-
-                    # Keep backup JSON data
-                    alumni_data = {
-                        "id": profile['id'],
-                        "name": person.name,
-                        "linkedin_url": profile['linkedin_url'],
-                        "picture_url": person.picture if hasattr(person, 'picture') else None,
-                        "bio": clean_text(person.about),
-                        "role": person.job_title,
-                        "companies": [clean_company_name(exp.institution_name) for exp in person.experiences],
-                        "current_location": None,
-                        "has_linkedin": True,
-                        "scraped": True,
-                        "manually_verified": False,
-                        "created_at": datetime.now().isoformat(),
-                        "experiences": []
-                    }
-
-                    # Process experiences for JSON backup
-                    for experience in person.experiences:
-                        location = getattr(experience, 'location', None)
-                        if not alumni_data["current_location"] and location:
-                            alumni_data["current_location"] = location
-                        experience_data = {
-                            "position": experience.position_title,
-                            "company": clean_company_name(experience.institution_name),
-                            "location": location,
-                            "duration": f"{experience.from_date} - Present" if not experience.to_date else f"{experience.from_date} to {experience.to_date}",
-                            "description": clean_text(experience.description) if experience.description else None
-                        }
-                        alumni_data["experiences"].append(experience_data)
-
-                    all_scraped_data.append(alumni_data)
-                    
-                except Exception as e:
-                    print(f"❌ Error scraping {profile['name']}: {e}")
-                    print("Error details:", str(e))
-                    # Mark as failed in database
-                    update_scraped_status_only(profile['id'], False)
+        # Process all profiles continuously
+        print(f"\nProcessing {len(profiles)} profiles...")
+        
+        for profile in profiles:
+            try:
+                print(f"\nScraping {profile['name']}...")
                 
-                # Random delay between profiles
-                time.sleep(random.uniform(4, 8))
+                # Check if browser is still responsive
+                try:
+                    driver.current_url
+                except Exception as e:
+                    print("Browser session lost, attempting to recover...")
+                    if driver:
+                        driver.quit()
+                    driver = webdriver.Chrome(options=chrome_options)
+                    driver.set_page_load_timeout(120)  # Reduced from 300 to 120 seconds
+                    driver.get("https://www.linkedin.com")
+                    time.sleep(1)  # Reduced from 2 to 1
+                    if not load_cookies(driver):
+                        print("Logging in again...")
+                        actions.login(driver, email, password)
+                        time.sleep(random.uniform(2, 3))  # Reduced from 3-5 to 2-3
+                        save_cookies(driver)
+                    else:
+                        driver.refresh()
+                        time.sleep(2)  # Reduced from 3 to 2
+                
+                driver.get(profile['linkedin_url'])
+                time.sleep(random.uniform(2, 3))  # Reduced from 3-5 to 2-3
+                
+                # Check for CAPTCHA
+                if "checkpoint" in driver.current_url or "challenge" in driver.current_url:
+                    print("\n⚠️ CAPTCHA detected! Please solve it manually.")
+                    print("The script will automatically continue once the CAPTCHA is solved...")
+                    
+                    # Wait for CAPTCHA to be solved (URL will change)
+                    while "checkpoint" in driver.current_url or "challenge" in driver.current_url:
+                        time.sleep(1)  # Reduced from 2 to 1 second
+                    
+                    print("CAPTCHA solved! Continuing with scraping...")
+                    # Save cookies after solving CAPTCHA
+                    save_cookies(driver)
+                    time.sleep(1)  # Reduced from 2 to 1
+                
+                # Random human-like behavior
+                random_human_scroll_and_mouse(driver)
+                
+                # Scrape profile
+                person = Person(profile['linkedin_url'], driver=driver)
+
+                # Save to Supabase
+                if save_profile_to_supabase(profile['id'], person, profile['linkedin_url']):
+                    print(f"✅ Successfully scraped and saved {profile['name']}")
+                else:
+                    print(f"⚠️ Scraped {profile['name']} but failed to save to database")
+                    # Still mark as scraped even if database save failed
+                    update_scraped_status_only(profile['id'], True)
+
+                # Keep backup JSON data
+                alumni_data = {
+                    "id": profile['id'],
+                    "name": person.name,
+                    "linkedin_url": profile['linkedin_url'],
+                    "picture_url": person.picture if hasattr(person, 'picture') else None,
+                    "bio": clean_text(person.about),
+                    "role": person.job_title,
+                    "companies": [clean_company_name(exp.institution_name) for exp in person.experiences],
+                    "current_location": None,
+                    "has_linkedin": True,
+                    "scraped": True,
+                    "manually_verified": False,
+                    "created_at": datetime.now().isoformat(),
+                    "experiences": []
+                }
+                
+                # Process experiences for JSON backup
+                for experience in person.experiences:
+                    location = getattr(experience, 'location', None)
+                    if not alumni_data["current_location"] and location:
+                        alumni_data["current_location"] = location
+                    experience_data = {
+                        "position": experience.position_title,
+                        "company": clean_company_name(experience.institution_name),
+                        "location": location,
+                        "duration": f"{experience.from_date} - Present" if not experience.to_date else f"{experience.from_date} to {experience.to_date}",
+                        "description": clean_text(experience.description) if experience.description else None
+                    }
+                    alumni_data["experiences"].append(experience_data)
+                
+                all_scraped_data.append(alumni_data)
+                
+            except Exception as e:
+                print(f"❌ Error scraping {profile['name']}: {e}")
+                print("Error details:", str(e))
+                # Mark as failed in database
+                update_scraped_status_only(profile['id'], False)
             
-            # Save progress after each batch
+            # Random delay between profiles
+            time.sleep(random.uniform(2, 4))  # Reduced from 4-8 to 2-4
+            
+            # Save progress after each profile
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file = f"data/alumni_mega_{timestamp}.json"
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(all_scraped_data, f, indent=2, ensure_ascii=False)
-            print(f"\nProgress saved to {output_file}")
-            
-            # If there are more batches, pause for review
-            if i + BATCH_SIZE < len(profiles):
-                print("\nBatch completed. Review the data and press Enter to continue with the next batch...")
-                input()
-                print("Continuing with next batch...")
+            print(f"Progress saved to {output_file}")
             
     except Exception as e:
         print(f"❌ Error during scraping: {e}")

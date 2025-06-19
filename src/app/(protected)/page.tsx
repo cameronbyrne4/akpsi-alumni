@@ -14,6 +14,7 @@ import { Typewriter } from '@/components/ui/typewriter'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { BackgroundPaths } from '@/components/ui/background-paths'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const PAGE_SIZE = 21;
 
@@ -64,6 +65,7 @@ export default function Home() {
   const [aiInputValue, setAiInputValue] = useState('');
   const [showPromptPopover, setShowPromptPopover] = useState(false);
   const promptLinkRef = useRef<HTMLButtonElement>(null);
+  const manualFilterRef = useRef<HTMLDivElement>(null);
 
   // If ?manual=1 is present, activate manual search mode
   useEffect(() => {
@@ -74,6 +76,18 @@ export default function Home() {
       router.replace('/', { scroll: false })
     }
   }, [searchParams, setManualSearchMode, router])
+
+  // Smooth scroll to manual filter when toggling
+  useEffect(() => {
+    if (manualSearchMode && manualFilterRef.current) {
+      setTimeout(() => {
+        manualFilterRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+      }, 100) // Small delay to ensure the element is rendered
+    }
+  }, [manualSearchMode])
 
   // Helper to build Supabase filter query
   const buildQuery = () => {
@@ -368,17 +382,25 @@ export default function Home() {
             </>
           )}
         </div>
-        {!manualSearchMode && !hasSearched && (
-          <div className="mt-4 flex justify-center">
-            <button
-              className="text-primary underline text-sm hover:text-primary/80 transition"
-              onClick={() => setManualSearchMode(true)}
-              type="button"
+        <AnimatePresence>
+          {!manualSearchMode && !hasSearched && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="mt-4 flex justify-center"
             >
-              use manual filters
-            </button>
-          </div>
-        )}
+              <button
+                className="text-primary underline text-sm hover:text-primary/80 transition"
+                onClick={() => setManualSearchMode(true)}
+                type="button"
+              >
+                use manual filters
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {aiError && (
           <div className="flex flex-col items-center mt-4">
             <span className="text-red-500 text-sm">{aiError}</span>
@@ -386,15 +408,26 @@ export default function Home() {
         )}
         {(hasSearched || manualSearchMode) && !aiLoading && (
           <>
-            <div className={manualSearchMode ? "mb-8 mt-8" : "mb-8"}>
+            <motion.div 
+              ref={manualFilterRef}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className={manualSearchMode ? "mb-8 mt-8" : "mb-8"}
+            >
               <SearchFilter
                 onSearch={setSearchQuery}
                 onFilterChange={handleFilterChange}
                 additionalCityOptions={aiLocationCities}
                 selectedFilters={aiSelectedFilters}
               />
-            </div>
-            <div className="mb-4 flex items-center justify-between">
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+              className="mb-4 flex items-center justify-between"
+            >
               {totalCount !== null && (
                 <span className="text-muted-foreground text-base">{totalCount} Results Found</span>
               )}
@@ -420,8 +453,13 @@ export default function Home() {
               >
                 Clear filters
               </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
               {alumni.length === 0 && !loading ? (
                 <div className="col-span-full flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
                   <span className="text-5xl mb-4">😢</span>
@@ -454,7 +492,7 @@ export default function Home() {
               <InfiniteScroll hasMore={hasMore} isLoading={loading} next={next} threshold={1}>
                 {hasMore && <Loader2 className="my-4 h-8 w-8 animate-spin" />}
               </InfiniteScroll>
-            </div>
+            </motion.div>
           </>
         )}
       </div>
