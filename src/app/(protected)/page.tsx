@@ -486,6 +486,10 @@ export default function Home() {
                     major={alum.majors}
                     minor={alum.minors}
                     members={alumni.map(a => ({ id: a.id, name: a.name }))}
+                    hasEnrichment={alum.has_enrichment}
+                    scraped={alum.scraped}
+                    careerHistory={alum.career_history}
+                    education={alum.education}
                   />
                 ))
               )}
