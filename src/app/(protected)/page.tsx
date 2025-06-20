@@ -47,7 +47,7 @@ export default function Home() {
     role: [] as string[],
     city: [] as string[],
     graduationYear: undefined as [number, number] | undefined,
-    hasContact: false,
+    hasCompleteProfile: false,
   })
   const {
     manualSearchMode,
@@ -104,11 +104,21 @@ export default function Home() {
   const buildQuery = () => {
     let q = supabase.from('alumni').select('*', { count: 'exact' })
     
-    // Has contact info - must be first filter
-    if (filters.hasContact) {
-      q = q.or('emails.not.is.null,phones.not.is.null,linkedin_url.not.is.null')
-        .not('emails', 'eq', '{}')
-        .not('phones', 'eq', '{}')
+    // Has professional info - must be first filter
+    if (filters.hasCompleteProfile) {
+      console.log('Applying hasCompleteProfile filter')
+      q = q.or(
+        // Has LinkedIn data (scraped or enriched)
+        'scraped.eq.true,has_enrichment.eq.true,' +
+        // OR has LinkedIn URL (indicates they have a profile)
+        'linkedin_url.not.is.null,' +
+        // OR has meaningful professional information (not empty)
+        'role.not.is.null,location.not.is.null'
+      )
+        // Exclude empty career history (null, empty array, or object with empty experiences)
+        .not('career_history', 'is', null)
+        .not('career_history', 'eq', '[]')
+        .not('career_history', 'eq', '{"bio":null,"experiences":[],"picture_url":null}')
     }
 
     // Search
@@ -208,6 +218,7 @@ export default function Home() {
     role?: string[]
     city?: string[]
     graduationYear?: [number, number]
+    hasCompleteProfile?: boolean
   }) => {
     setFilters(prev => ({
       ...prev,
@@ -471,7 +482,7 @@ export default function Home() {
                     role: [],
                     city: [],
                     graduationYear: undefined,
-                    hasContact: false,
+                    hasCompleteProfile: false,
                   })
                   setSearchQuery('')
                   setAiSelectedFilters({

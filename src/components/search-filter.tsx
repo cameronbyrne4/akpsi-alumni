@@ -14,7 +14,7 @@ interface SearchFilterProps {
     role?: string[]
     city?: string[]
     graduationYear?: [number, number]
-    hasContact?: boolean
+    hasCompleteProfile?: boolean
   }) => void
   additionalCityOptions?: { label: string; value: string }[]
   selectedFilters?: {
@@ -22,7 +22,7 @@ interface SearchFilterProps {
     role: string[]
     city: string[]
     graduationYear?: [number, number]
-    hasContact?: boolean
+    hasCompleteProfile?: boolean
   }
 }
 
@@ -73,7 +73,7 @@ export function SearchFilter({
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
   const [selectedRoles, setSelectedRoles] = useState<string[]>(selectedFilters?.role || [])
   const [selectedCities, setSelectedCities] = useState<string[]>(selectedFilters?.city || [])
-  const [hasContact, setHasContact] = useState<boolean>(selectedFilters?.hasContact || false)
+  const [hasCompleteProfile, setHasCompleteProfile] = useState<boolean>(selectedFilters?.hasCompleteProfile || false)
 
   // Update selected filters when they change from props
   React.useEffect(() => {
@@ -84,7 +84,7 @@ export function SearchFilter({
       if (selectedFilters.graduationYear) {
         setYearRange(selectedFilters.graduationYear)
       }
-      setHasContact(selectedFilters.hasContact || false)
+      setHasCompleteProfile(selectedFilters.hasCompleteProfile || false)
     }
   }, [selectedFilters])
 
@@ -136,9 +136,9 @@ export function SearchFilter({
     onFilterChange({ city: value })
   }
 
-  const handleHasContactChange = (checked: boolean) => {
-    setHasContact(checked)
-    onFilterChange({ hasContact: checked })
+  const handleHasCompleteProfileChange = (checked: boolean) => {
+    setHasCompleteProfile(checked)
+    onFilterChange({ hasCompleteProfile: checked })
   }
 
   return (
@@ -194,15 +194,15 @@ export function SearchFilter({
 
         <div className="flex items-center space-x-2">
           <Checkbox
-            id="hasContact"
-            checked={hasContact}
-            onCheckedChange={handleHasContactChange}
+            id="hasCompleteProfile"
+            checked={hasCompleteProfile}
+            onCheckedChange={handleHasCompleteProfileChange}
           />
           <Label
-            htmlFor="hasContact"
+            htmlFor="hasCompleteProfile"
             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
           >
-            Has Contact Info
+            Has Professional Info
           </Label>
         </div>
       </div>
