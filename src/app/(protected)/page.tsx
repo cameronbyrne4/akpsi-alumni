@@ -5,7 +5,6 @@ import { AlumniCard } from '@/components/ui/alumni-card'
 import { SearchFilter } from '@/components/search-filter'
 import { supabase } from '@/lib/supabase'
 import type { Alumni } from '@/lib/supabase'
-import InfiniteScroll from '@/components/ui/infinite-scroll'
 import { Loader2, X, Info } from 'lucide-react'
 import { AiSearchBar } from '@/components/ai-search-bar'
 import { useLayoutContext } from '@/components/client-layout-shell'
@@ -15,6 +14,15 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Button } from '@/components/ui/button'
 import { BackgroundPaths } from '@/components/ui/background-paths'
 import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationEllipsis,
+} from '@/components/ui/pagination'
 
 const PAGE_SIZE = 21;
 
@@ -66,6 +74,9 @@ export default function Home() {
   const [showPromptPopover, setShowPromptPopover] = useState(false);
   const promptLinkRef = useRef<HTMLButtonElement>(null);
   const manualFilterRef = useRef<HTMLDivElement>(null);
+  const alumniListRef = useRef<HTMLDivElement>(null);
+
+  const totalPages = totalCount ? Math.ceil(totalCount / PAGE_SIZE) : 1;
 
   // If ?manual=1 is present, activate manual search mode
   useEffect(() => {
@@ -182,11 +193,14 @@ export default function Home() {
     fetchAlumni(0, true)
   }, [searchQuery, JSON.stringify(filters)])
 
-  const next = async () => {
-    const nextPage = page + 1
-    await fetchAlumni(nextPage)
-    setPage(nextPage)
-  }
+  // Fetch alumni when page changes
+  useEffect(() => {
+    fetchAlumni(page, true);
+    if (alumniListRef.current) {
+      alumniListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const handleFilterChange = (newFilters: {
     industry?: string[]
@@ -278,6 +292,24 @@ export default function Home() {
       // TODO: In the future, parse and apply the AI query as filters
     }
   }, [aiQuery, previousSearches, setManualSearchMode])
+
+  // Helper to generate page numbers with ellipsis (industry standard)
+  const getPageNumbers = () => {
+    if (!totalPages) return [];
+    const pages: (number | 'ellipsis')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 0; i < totalPages; i++) pages.push(i);
+    } else {
+      if (page <= 3) {
+        pages.push(0, 1, 2, 3, 'ellipsis', totalPages - 1);
+      } else if (page >= totalPages - 4) {
+        pages.push(0, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1);
+      } else {
+        pages.push(0, 'ellipsis', page - 1, page, page + 1, 'ellipsis', totalPages - 1);
+      }
+    }
+    return pages;
+  };
 
   return (
     <main className="min-h-screen bg-background flex flex-col relative">
@@ -455,6 +487,7 @@ export default function Home() {
               </button>
             </motion.div>
             <motion.div 
+              ref={alumniListRef}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
@@ -493,10 +526,67 @@ export default function Home() {
                   />
                 ))
               )}
-              <InfiniteScroll hasMore={hasMore} isLoading={loading} next={next} threshold={1}>
-                {hasMore && <Loader2 className="my-4 h-8 w-8 animate-spin" />}
-              </InfiniteScroll>
             </motion.div>
+            {/* Pagination controls - moved outside grid for true centering */}
+            {totalPages > 1 && (
+              <div className="w-full flex justify-center pt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => {
+                          setPage((p) => {
+                            const newPage = Math.max(0, p - 1);
+                            if (alumniListRef.current) {
+                              alumniListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                            return newPage;
+                          });
+                        }}
+                        aria-disabled={page === 0}
+                        tabIndex={page === 0 ? -1 : 0}
+                        className={page === 0 ? 'pointer-events-none opacity-50' : ''}
+                      />
+                    </PaginationItem>
+                    {getPageNumbers().map((p, idx) =>
+                      p === 'ellipsis' ? (
+                        <PaginationItem key={`ellipsis-${idx}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={p}>
+                          <PaginationLink
+                            isActive={p === page}
+                            onClick={() => setPage(p as number)}
+                            aria-current={p === page ? 'page' : undefined}
+                            tabIndex={0}
+                            href="#"
+                          >
+                            {p + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => {
+                          setPage((p) => {
+                            const newPage = Math.min(totalPages - 1, p + 1);
+                            if (alumniListRef.current) {
+                              alumniListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                            return newPage;
+                          });
+                        }}
+                        aria-disabled={page === totalPages - 1}
+                        tabIndex={page === totalPages - 1 ? -1 : 0}
+                        className={page === totalPages - 1 ? 'pointer-events-none opacity-50' : ''}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </>
         )}
       </div>
