@@ -131,19 +131,22 @@ export function AlumniCard({
   // Determine the best companies to display based on enrichment level
   const getBestCompanies = () => {
     if (hasEnrichment && careerHistory && careerHistory.length > 0) {
-      // Use career history company names
-      return careerHistory.map((exp: CareerExperience) => exp.company_name).filter((company): company is string => Boolean(company));
+      // Use career history company names and deduplicate
+      const companyNames = careerHistory.map((exp: CareerExperience) => exp.company_name).filter((company): company is string => Boolean(company));
+      return [...new Set(companyNames)]; // Remove duplicates
     }
     
     if (scraped && careerHistory && careerHistory.length > 0) {
       // For scraped but not enriched, look for experiences array
       const experiences = careerHistory.find((exp: CareerExperience) => exp.experiences);
       if (experiences?.experiences && experiences.experiences.length > 0) {
-        return experiences.experiences.map(exp => exp.company).filter((company): company is string => Boolean(company));
+        const companyNames = experiences.experiences.map(exp => exp.company).filter((company): company is string => Boolean(company));
+        return [...new Set(companyNames)]; // Remove duplicates
       }
     }
     
-    return companies;
+    // For manual companies array, also deduplicate
+    return companies ? [...new Set(companies)] : [];
   };
 
   // Get the best bio to display
