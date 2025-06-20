@@ -5,6 +5,26 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
+interface CareerExperience {
+  title: string; // Software Engineer or Product Manager or etc.
+  company_name: string; // Google or Apple or etc.
+  start_date: string; // 2020-01-01
+  end_date: string | null; // 2024-01-01 or null if still working there
+  description?: string; // Hide on alumni cards for simplicity
+  location?: string;
+  company_logo?: string;
+}
+
+interface Education {
+  degree: string; // BS or MS or PHD
+  field_of_study: string; // Computer Science or Business or Engineering or etc.
+  school_name: string; // University of California, Berkeley or Stanford University or etc.
+  school_logo?: string; // URL to the school logo
+  start_date: string; // 2020-01-01
+  end_date: string | null; // 2024-01-01 or null if still studying
+  description?: string; // Hide on alumni cards for simplicity
+}
+
 export type Alumni = {
   id: string
   name: string
@@ -22,11 +42,13 @@ export type Alumni = {
   has_linkedin: boolean
   scraped: boolean
   manually_verified: boolean
+  has_enrichment:boolean
   source_sheet?: string[]
   created_at?: string  // Usually auto-generated
   emails?: string[]  // Match DB column name
   phones?: string[]  // Match DB column name
   majors?: string[]  // Match DB column name
   minors?: string[]  // Match DB column name
-  career_history?: string[]  // Add missing field from DB
+  career_history?: CareerExperience[]; // JSONB array of career objects
+  education?: Education[]; // JSONB array of education objects
 }
