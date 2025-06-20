@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, PlusCircle, Pencil, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 import {
@@ -20,6 +20,328 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Helper to format dates for display
+const formatDate = (dateString: string | undefined | null) => {
+  if (!dateString || dateString === 'Present') return 'Present';
+  try {
+    const date = new Date(dateString);
+    // Use UTC methods to avoid timezone issues
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  } catch (e) {
+    return dateString; // Return original string if parsing fails
+  }
+};
+
+const formatEducationDate = (dateString: string | undefined | null) => {
+  if (!dateString || dateString === 'Present') return 'Present';
+  try {
+    const date = new Date(dateString);
+    return date.getUTCFullYear().toString();
+  } catch (e) {
+    return dateString; // Return original string if parsing fails
+  }
+};
+
+// Experience Form Component
+const ExperienceForm = ({
+  isOpen,
+  onClose,
+  onSave,
+  experience,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (experience: any) => void;
+  experience: any | null;
+}) => {
+  const [title, setTitle] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [location, setLocation] = useState('');
+  const [isCurrentRole, setIsCurrentRole] = useState(false);
+  const [startMonth, setStartMonth] = useState('');
+  const [startYear, setStartYear] = useState('');
+  const [endMonth, setEndMonth] = useState('');
+  const [endYear, setEndYear] = useState('');
+  const [description, setDescription] = useState('');
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const years = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - i);
+
+  useEffect(() => {
+    if (isOpen && experience) {
+      setTitle(experience.title || '');
+      setCompanyName(experience.company_name || '');
+      setLocation(experience.location || '');
+      setDescription(experience.description || '');
+
+      const isCurrent = experience.end_date === 'Present' || !experience.end_date;
+      setIsCurrentRole(isCurrent);
+
+      if (experience.start_date) {
+        const startDate = new Date(experience.start_date);
+        setStartMonth((startDate.getUTCMonth() + 1).toString());
+        setStartYear(startDate.getUTCFullYear().toString());
+      } else {
+        setStartMonth('');
+        setStartYear('');
+      }
+
+      if (!isCurrent && experience.end_date) {
+        const endDate = new Date(experience.end_date);
+        setEndMonth((endDate.getUTCMonth() + 1).toString());
+        setEndYear(endDate.getUTCFullYear().toString());
+      } else {
+        setEndMonth('');
+        setEndYear('');
+      }
+    } else if (isOpen) {
+      // Reset form for new experience
+      setTitle('');
+      setCompanyName('');
+      setLocation('');
+      setIsCurrentRole(false);
+      setStartMonth('');
+      setStartYear('');
+      setEndMonth('');
+      setEndYear('');
+      setDescription('');
+    }
+  }, [isOpen, experience]);
+
+  const handleSave = () => {
+    if (!title || !companyName || !startMonth || !startYear) {
+      // Basic validation
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    const experienceData = {
+      title,
+      company_name: companyName,
+      location,
+      description,
+      start_date: new Date(Date.UTC(parseInt(startYear), parseInt(startMonth) - 1, 1)).toISOString(),
+      end_date: isCurrentRole ? 'Present' : new Date(Date.UTC(parseInt(endYear), parseInt(endMonth) - 1, 1)).toISOString(),
+      company_logo: experience?.company_logo || '', // Preserve existing logo
+    };
+    onSave(experienceData);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] bg-background text-foreground">
+        <DialogHeader>
+          <DialogTitle>{experience ? 'Edit Experience' : 'Add Experience'}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title*</Label>
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Retail Sales Manager" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="companyName">Company or organization*</Label>
+            <Input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Ex: Microsoft" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Ex: San Francisco, CA" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="currentRole" checked={isCurrentRole} onCheckedChange={(checked) => setIsCurrentRole(checked as boolean)} />
+            <Label htmlFor="currentRole">They are currently working in this role</Label>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start date*</Label>
+              <div className="flex gap-2">
+                <Select value={startMonth} onValueChange={setStartMonth}>
+                  <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
+                  <SelectContent>
+                    {months.map((m, i) => <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={startYear} onValueChange={setStartYear}>
+                  <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                  <SelectContent>
+                    {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {!isCurrentRole && (
+              <div className="space-y-2">
+                <Label>End date*</Label>
+                <div className="flex gap-2">
+                  <Select value={endMonth} onValueChange={setEndMonth}>
+                    <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
+                    <SelectContent>
+                      {months.map((m, i) => <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={endYear} onValueChange={setEndYear}>
+                    <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                    <SelectContent>
+                      {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <textarea id="description" value={description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Describe their role and accomplishments." className="w-full min-h-[100px] px-3 py-2 border rounded-md bg-transparent" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSave}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Education Form Component
+const EducationForm = ({
+  isOpen,
+  onClose,
+  onSave,
+  education,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (education: any) => void;
+  education: any | null;
+}) => {
+  const [schoolName, setSchoolName] = useState('');
+  const [degree, setDegree] = useState('');
+  const [fieldOfStudy, setFieldOfStudy] = useState('');
+  const [startYear, setStartYear] = useState('');
+  const [endYear, setEndYear] = useState('');
+  const [description, setDescription] = useState('');
+
+  const years = Array.from({ length: 70 }, (_, i) => new Date().getFullYear() - i);
+
+  useEffect(() => {
+    if (isOpen && education) {
+      setSchoolName(education.school_name || '');
+      setDegree(education.degree || '');
+      setFieldOfStudy(education.field_of_study || '');
+      setDescription(education.description || '');
+
+      if (education.start_date) {
+        setStartYear(new Date(education.start_date).getUTCFullYear().toString());
+      } else {
+        setStartYear('');
+      }
+
+      if (education.end_date) {
+        setEndYear(new Date(education.end_date).getUTCFullYear().toString());
+      } else {
+        setEndYear('');
+      }
+    } else if (isOpen) {
+      // Reset form for new education
+      setSchoolName('');
+      setDegree('');
+      setFieldOfStudy('');
+      setStartYear('');
+      setEndYear('');
+      setDescription('');
+    }
+  }, [isOpen, education]);
+
+  const handleSave = () => {
+    if (!schoolName || !startYear || !endYear) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    const educationData = {
+      school_name: schoolName,
+      degree,
+      field_of_study: fieldOfStudy,
+      description,
+      start_date: new Date(Date.UTC(parseInt(startYear), 0, 1)).toISOString(),
+      end_date: new Date(Date.UTC(parseInt(endYear), 0, 1)).toISOString(),
+      school_logo: education?.school_logo || '', // Preserve existing logo
+    };
+    onSave(educationData);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] bg-background text-foreground">
+        <DialogHeader>
+          <DialogTitle>{education ? 'Edit Education' : 'Add Education'}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="schoolName">School*</Label>
+            <Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} placeholder="Ex: Boston University" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="degree">Degree</Label>
+            <Input id="degree" value={degree} onChange={(e) => setDegree(e.target.value)} placeholder="Ex: BA, BS, etc." />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fieldOfStudy">Field of study</Label>
+            <Input id="fieldOfStudy" value={fieldOfStudy} onChange={(e) => setFieldOfStudy(e.target.value)} placeholder="Ex: Business" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start date</Label>
+              <Select value={startYear} onValueChange={setStartYear}>
+                <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                <SelectContent>
+                  {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>End date (or expected)</Label>
+              <Select value={endYear} onValueChange={setEndYear}>
+                <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                <SelectContent>
+                  {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Activities and societies</Label>
+            <textarea id="description" value={description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Describe activities, societies, etc." className="w-full min-h-[100px] px-3 py-2 border rounded-md bg-transparent" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSave}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 
 export default function UpdateAlumniPage() {
   const { toast } = useToast();
@@ -27,7 +349,7 @@ export default function UpdateAlumniPage() {
   const [loading, setLoading] = useState(false);
   const [alumni, setAlumni] = useState<Alumni | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [formData, setFormData] = useState<Partial<Alumni>>({});
+  const [formData, setFormData] = useState<any>({});
   const [bigBrotherError, setBigBrotherError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -43,9 +365,33 @@ export default function UpdateAlumniPage() {
     graduation_year: undefined,
     big_brother: '',
     little_brothers: [] as string[],
+    linkedin_url: '',
+    picture_url: '',
+    bio: '',
+    emails: [] as string[],
+    phones: [] as string[],
+    majors: [] as string[],
+    minors: [] as string[],
+    career_history: [] as any[],
+    education: [] as any[],
+    has_linkedin: false,
+    scraped: false,
+    manually_verified: false,
+    has_enrichment: false,
+    source_sheet: [] as string[],
   });
   const [bigBrotherName, setBigBrotherName] = useState<string>('');
   const [allAlumni, setAllAlumni] = useState<Array<{ id: string; name: string }>>([]);
+
+  // Experience form state
+  const [isExperienceModalOpen, setIsExperienceModalOpen] = useState(false);
+  const [editingExperience, setEditingExperience] = useState<any | null>(null);
+  const [editingExperienceIndex, setEditingExperienceIndex] = useState<number | null>(null);
+
+  // Education form state
+  const [isEducationModalOpen, setIsEducationModalOpen] = useState(false);
+  const [editingEducation, setEditingEducation] = useState<any | null>(null);
+  const [editingEducationIndex, setEditingEducationIndex] = useState<number | null>(null);
 
   // Fetch all alumni names for lookup
   useEffect(() => {
@@ -104,20 +450,61 @@ export default function UpdateAlumniPage() {
       if (error) throw error;
       if (data) {
         setAlumni(data);
+
+        // --- Start of new logic ---
+        const educationHistory = [...(data.education || [])];
+        const majors = data.majors || [];
+        const minors = data.minors || [];
+        
+        if (majors.length > 0 || minors.length > 0) {
+          const ucsbIndex = educationHistory.findIndex(
+            (edu) => edu.school_name?.toLowerCase() === 'university of california, santa barbara'
+          );
+
+          const fieldsFromArrays = [...majors, ...minors];
+
+          if (ucsbIndex > -1) {
+            // UCSB entry exists, update it by merging fields
+            const ucsbEdu = { ...educationHistory[ucsbIndex] };
+            
+            // Combine and deduplicate fields
+            const existingFields = ucsbEdu.field_of_study?.split(/[,;]/).map((f: string) => f.trim()).filter(Boolean) || [];
+            const allFields = [...new Set([...existingFields, ...fieldsFromArrays])];
+
+            ucsbEdu.field_of_study = allFields.join(', ');
+            educationHistory[ucsbIndex] = ucsbEdu;
+
+          } else {
+            // No UCSB entry, create one
+            educationHistory.push({
+              school_name: 'University of California, Santa Barbara',
+              degree: '', // Can't assume degree
+              field_of_study: fieldsFromArrays.join(', '),
+              start_date: null, // No assumed start/end date
+              end_date: null,
+              description: 'Primary undergraduate institution.',
+            });
+          }
+        }
+        // --- End of new logic ---
+
         setFormData({
-          id: data.id,
-          name: '',
-          role: '',
-          companies: [],
-          industry: [] as string[],
-          location: '',
-          family_branch: '',
-          graduation_year: undefined,
-          big_brother: '',
-          little_brothers: [],
+          ...data,
+          // Use the modified education history
+          education: educationHistory, 
+          companies: (data.companies || []).join(', '),
+          industry: (data.industry || []).join(', '),
+          little_brothers: (data.little_brothers || []).join(', '),
+          emails: (data.emails || []).join(', '),
+          phones: (data.phones || []).join(', '),
+          // Keep majors/minors as strings for now in case user wants to edit
+          majors: (data.majors || []).join(', '),
+          minors: (data.minors || []).join(', '),
+          source_sheet: (data.source_sheet || []).join(', '),
         });
+        
         // Set the big brother name for display
-        setBigBrotherName(getNameFromId(data.big_brother));
+        setBigBrotherName(getNameFromId(data.big_brother ?? null));
       } else {
         setSearchError('No alumni found with that name');
       }
@@ -192,14 +579,9 @@ export default function UpdateAlumniPage() {
     return true;
   };
 
-  const handleInputChange = async (field: keyof Alumni, value: string | number | string[]) => {
-    // Always update the form data first
-    setFormData(prev => ({
-      ...prev,
-      [field]: value // Remove the || '' since we want to preserve arrays
-    }));
+  const handleInputChange = async (field: keyof Alumni, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
 
-    // Then validate if it's a field that needs validation
     if (field === 'big_brother') {
       await validateBigBrother(value as string);
     } else if (field === 'name') {
@@ -226,22 +608,40 @@ export default function UpdateAlumniPage() {
       // Convert big brother name to ID
       const bigBrotherId = getIdFromName(bigBrotherName);
 
+      // Helper function to convert string to array for array fields
+      const convertToArray = (value: any): string[] => {
+        if (typeof value === 'string') {
+          return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
+        }
+        return value || [];
+      };
+
       // Create update object with only changed fields and required fields
       const updateData = {
         ...formData,
-        // Ensure required fields are included
         name: formData.name || alumni.name,
         role: formData.role || alumni.role,
-        companies: formData.companies || alumni.companies,
-        industry: formData.industry || alumni.industry,
+        companies: convertToArray(formData.companies),
+        industry: convertToArray(formData.industry),
         family_branch: formData.family_branch || alumni.family_branch,
         graduation_year: formData.graduation_year || alumni.graduation_year,
         location: formData.location || alumni.location,
         big_brother: bigBrotherId || null,
-        // Keep existing values for boolean fields
-        has_linkedin: alumni.has_linkedin,
-        scraped: alumni.scraped,
-        manually_verified: alumni.manually_verified,
+        little_brothers: convertToArray(formData.little_brothers),
+        linkedin_url: formData.linkedin_url || alumni.linkedin_url,
+        picture_url: formData.picture_url || alumni.picture_url,
+        bio: formData.bio || alumni.bio,
+        emails: convertToArray(formData.emails),
+        phones: convertToArray(formData.phones),
+        majors: convertToArray(formData.majors),
+        minors: convertToArray(formData.minors),
+        career_history: formData.career_history || alumni.career_history,
+        education: formData.education || alumni.education,
+        source_sheet: convertToArray(formData.source_sheet),
+        has_linkedin: formData.has_linkedin !== undefined ? formData.has_linkedin : alumni.has_linkedin,
+        scraped: formData.scraped !== undefined ? formData.scraped : alumni.scraped,
+        manually_verified: formData.manually_verified !== undefined ? formData.manually_verified : alumni.manually_verified,
+        has_enrichment: formData.has_enrichment !== undefined ? formData.has_enrichment : alumni.has_enrichment,
       };
 
       const { error } = await supabase
@@ -264,8 +664,18 @@ export default function UpdateAlumniPage() {
         .single();
       if (data) {
         setAlumni(data);
-        setFormData(data);
-        setBigBrotherName(getNameFromId(data.big_brother));
+        setFormData({
+            ...data,
+            companies: (data.companies || []).join(', '),
+            industry: (data.industry || []).join(', '),
+            little_brothers: (data.little_brothers || []).join(', '),
+            emails: (data.emails || []).join(', '),
+            phones: (data.phones || []).join(', '),
+            majors: (data.majors || []).join(', '),
+            minors: (data.minors || []).join(', '),
+            source_sheet: (data.source_sheet || []).join(', '),
+        });
+        setBigBrotherName(getNameFromId(data.big_brother ?? null));
       }
     } catch (error) {
       console.error('Error updating alumni:', error);
@@ -329,19 +739,28 @@ export default function UpdateAlumniPage() {
       // Include all required fields and initialize arrays properly
       const createData = {
         name: newAlumniData.name,
-        has_linkedin: false,
-        scraped: false,
-        manually_verified: false,
-        // Initialize all array fields as empty arrays
-        companies: [] as string[],
-        industry: [] as string[],
-        little_brothers: [] as string[],
-        source_sheet: [] as string[],
-        career_history: [] as string[],
-        majors: [] as string[],
-        minors: [] as string[],
-        emails: [] as string[],
-        phones: [] as string[],
+        role: newAlumniData.role || '',
+        companies: newAlumniData.companies || [] as string[],
+        industry: newAlumniData.industry || [] as string[],
+        location: newAlumniData.location || '',
+        family_branch: newAlumniData.family_branch || '',
+        graduation_year: newAlumniData.graduation_year,
+        big_brother: newAlumniData.big_brother || '',
+        little_brothers: newAlumniData.little_brothers || [] as string[],
+        linkedin_url: newAlumniData.linkedin_url || '',
+        picture_url: newAlumniData.picture_url || '',
+        bio: newAlumniData.bio || '',
+        emails: newAlumniData.emails || [] as string[],
+        phones: newAlumniData.phones || [] as string[],
+        majors: newAlumniData.majors || [] as string[],
+        minors: newAlumniData.minors || [] as string[],
+        career_history: newAlumniData.career_history || [] as any[],
+        education: newAlumniData.education || [] as any[],
+        source_sheet: newAlumniData.source_sheet || [] as string[],
+        has_linkedin: newAlumniData.has_linkedin || false,
+        scraped: newAlumniData.scraped || false,
+        manually_verified: newAlumniData.manually_verified || false,
+        has_enrichment: newAlumniData.has_enrichment || false,
       };
 
       // Better console logging
@@ -378,6 +797,20 @@ export default function UpdateAlumniPage() {
         graduation_year: undefined,
         big_brother: '',
         little_brothers: [] as string[],
+        linkedin_url: '',
+        picture_url: '',
+        bio: '',
+        emails: [] as string[],
+        phones: [] as string[],
+        majors: [] as string[],
+        minors: [] as string[],
+        career_history: [] as any[],
+        education: [] as any[],
+        has_linkedin: false,
+        scraped: false,
+        manually_verified: false,
+        has_enrichment: false,
+        source_sheet: [] as string[],
       });
     } catch (error) {
       console.error('Error creating alumni:', error);
@@ -389,6 +822,103 @@ export default function UpdateAlumniPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddExperience = () => {
+    setEditingExperience(null);
+    setEditingExperienceIndex(null);
+    setIsExperienceModalOpen(true);
+  };
+
+  const handleEditExperience = (index: number) => {
+    setEditingExperience(formData.career_history[index]);
+    setEditingExperienceIndex(index);
+    setIsExperienceModalOpen(true);
+  };
+
+  const handleDeleteExperience = (index: number) => {
+    const updatedHistory = [...formData.career_history];
+    updatedHistory.splice(index, 1);
+    updateRoleAndCompaniesFromHistory(updatedHistory);
+  };
+
+  const handleSaveExperience = (experienceData: any) => {
+    const updatedHistory = [...(formData.career_history || [])];
+    if (editingExperienceIndex !== null) {
+      // Editing existing
+      updatedHistory[editingExperienceIndex] = experienceData;
+    } else {
+      // Adding new
+      updatedHistory.unshift(experienceData); // Add to beginning for better UX
+    }
+    updateRoleAndCompaniesFromHistory(updatedHistory);
+    setIsExperienceModalOpen(false);
+  };
+
+  const updateRoleAndCompaniesFromHistory = (history: any[]) => {
+    if (!history) return;
+
+    const getMostRecentExperience = (h: any[]) => {
+      if (!h || h.length === 0) return null;
+
+      const presentJobs = h.filter(exp => exp.end_date === 'Present');
+      if (presentJobs.length > 0) {
+          presentJobs.sort((a, b) => {
+            const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
+            const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
+            return dateB - dateA;
+          });
+          return presentJobs[0];
+      }
+
+      const sortedHistory = [...h].sort((a, b) => {
+          if (!a.end_date || !b.end_date) return 0;
+          return new Date(b.end_date).getTime() - new Date(a.end_date).getTime()
+      });
+      return sortedHistory.length > 0 ? sortedHistory[0] : null;
+    }
+
+    const latestExperience = getMostRecentExperience(history);
+    const latestRole = latestExperience ? latestExperience.title : '';
+    const allCompanies = history.length > 0 ? [...new Set(history.map(exp => exp.company_name).filter(Boolean))] : [];
+    
+    setFormData((prev: any) => ({
+        ...prev,
+        career_history: history,
+        role: latestRole,
+        companies: allCompanies.join(', ')
+    }));
+  }
+
+  const handleAddEducation = () => {
+    setEditingEducation(null);
+    setEditingEducationIndex(null);
+    setIsEducationModalOpen(true);
+  };
+
+  const handleEditEducation = (index: number) => {
+    setEditingEducation(formData.education[index]);
+    setEditingEducationIndex(index);
+    setIsEducationModalOpen(true);
+  };
+
+  const handleDeleteEducation = (index: number) => {
+    const updatedEducation = [...formData.education];
+    updatedEducation.splice(index, 1);
+    handleInputChange('education', updatedEducation);
+  };
+
+  const handleSaveEducation = (educationData: any) => {
+    const updatedEducation = [...(formData.education || [])];
+    if (editingEducationIndex !== null) {
+      // Editing existing
+      updatedEducation[editingEducationIndex] = educationData;
+    } else {
+      // Adding new
+      updatedEducation.push(educationData);
+    }
+    handleInputChange('education', updatedEducation);
+    setIsEducationModalOpen(false);
   };
 
   return (
@@ -435,6 +965,20 @@ export default function UpdateAlumniPage() {
                       graduation_year: undefined,
                       big_brother: '',
                       little_brothers: [] as string[],
+                      linkedin_url: '',
+                      picture_url: '',
+                      bio: '',
+                      emails: [] as string[],
+                      phones: [] as string[],
+                      majors: [] as string[],
+                      minors: [] as string[],
+                      career_history: [] as any[],
+                      education: [] as any[],
+                      has_linkedin: false,
+                      scraped: false,
+                      manually_verified: false,
+                      has_enrichment: false,
+                      source_sheet: [] as string[],
                     });
                   }}
                 >
@@ -459,9 +1003,47 @@ export default function UpdateAlumniPage() {
                 <Input
                   id="new-name"
                   value={newAlumniData.name || ''}
-                  onChange={(e) => setNewAlumniData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAlumniData(prev => ({ ...prev, name: e.target.value }))}
                   required
                 />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="new-role">Role</Label>
+                  <Input
+                    id="new-role"
+                    value={newAlumniData.role || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAlumniData(prev => ({ ...prev, role: e.target.value }))}
+                    placeholder="Ex. Software Engineer"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-location">Location</Label>
+                  <Input
+                    id="new-location"
+                    value={newAlumniData.location || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAlumniData(prev => ({ ...prev, location: e.target.value }))}
+                    placeholder="Ex. San Francisco, CA"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-linkedin">LinkedIn URL</Label>
+                  <Input
+                    id="new-linkedin"
+                    value={newAlumniData.linkedin_url || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAlumniData(prev => ({ ...prev, linkedin_url: e.target.value }))}
+                    placeholder="Ex. https://linkedin.com/in/johnsmith"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-family-branch">Family Branch</Label>
+                  <Input
+                    id="new-family-branch"
+                    value={newAlumniData.family_branch || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewAlumniData(prev => ({ ...prev, family_branch: e.target.value }))}
+                    placeholder="Ex. Paahana"
+                  />
+                </div>
               </div>
               <div className="flex justify-end gap-4">
                 <Button
@@ -479,6 +1061,20 @@ export default function UpdateAlumniPage() {
                       graduation_year: undefined,
                       big_brother: '',
                       little_brothers: [] as string[],
+                      linkedin_url: '',
+                      picture_url: '',
+                      bio: '',
+                      emails: [] as string[],
+                      phones: [] as string[],
+                      majors: [] as string[],
+                      minors: [] as string[],
+                      career_history: [] as any[],
+                      education: [] as any[],
+                      has_linkedin: false,
+                      scraped: false,
+                      manually_verified: false,
+                      has_enrichment: false,
+                      source_sheet: [] as string[],
                     });
                   }}
                 >
@@ -528,34 +1124,6 @@ export default function UpdateAlumniPage() {
                   </div>
                 </div>
 
-                {/* Current Role */}
-                <div className="space-y-2">
-                  <Label htmlFor="role">Current Role</Label>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Current: {alumni.role || 'Not set'}</p>
-                    <Input
-                      id="role"
-                      value={formData.role}
-                      onChange={(e) => handleInputChange('role', e.target.value)}
-                      placeholder="Ex. Software Engineer"
-                    />
-                  </div>
-                </div>
-
-                {/* Companies */}
-                <div className="space-y-2">
-                  <Label htmlFor="companies">Companies</Label>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Current: {alumni.companies?.join(', ') || 'Not set'}</p>
-                    <Input
-                      id="companies"
-                      value={formData.companies?.join(', ') || ''}
-                      onChange={(e) => handleInputChange('companies', e.target.value.split(',').map(c => c.trim()))}
-                      placeholder="Ex. Google, Microsoft"
-                    />
-                  </div>
-                </div>
-
                 {/* Industry */}
                 <div className="space-y-2">
                   <Label htmlFor="industry">Industry</Label>
@@ -563,8 +1131,8 @@ export default function UpdateAlumniPage() {
                     <p className="text-sm text-muted-foreground">Current: {alumni.industry?.join(', ') || 'Not set'}</p>
                     <Input
                       id="industry"
-                      value={formData.industry?.join(', ') || ''}
-                      onChange={(e) => handleInputChange('industry', e.target.value.split(',').map(i => i.trim()))}
+                      value={formData.industry || ''}
+                      onChange={(e) => handleInputChange('industry', e.target.value)}
                       placeholder="Ex. Technology"
                     />
                   </div>
@@ -619,7 +1187,7 @@ export default function UpdateAlumniPage() {
                 <div className="space-y-2">
                   <Label htmlFor="big_brother">Big Brother</Label>
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Current: {bigBrotherName || 'Not set'}</p>
+                    <p className="text-sm text-muted-foreground">Current: {getNameFromId(alumni.big_brother ?? null) || 'Not set'}</p>
                     <Input
                       id="big_brother"
                       value={bigBrotherName}
@@ -642,10 +1210,204 @@ export default function UpdateAlumniPage() {
                     <p className="text-sm text-muted-foreground">Current: {alumni.little_brothers?.join(', ') || 'Not set'}</p>
                     <Input
                       id="little_brothers"
-                      value={formData.little_brothers?.join(', ') || ''}
-                      onChange={(e) => handleInputChange('little_brothers', e.target.value.split(',').map(b => b.trim()))}
+                      value={formData.little_brothers || ''}
+                      onChange={(e) => handleInputChange('little_brothers', e.target.value)}
                       placeholder="Ex. Jane Doe, Bob Smith"
                     />
+                  </div>
+                </div>
+
+                {/* LinkedIn URL */}
+                <div className="space-y-2">
+                  <Label htmlFor="linkedin_url">LinkedIn URL</Label>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Current: {alumni.linkedin_url || 'Not set'}</p>
+                    <Input
+                      id="linkedin_url"
+                      value={formData.linkedin_url || ''}
+                      onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
+                      placeholder="Ex. https://linkedin.com/in/johnsmith"
+                    />
+                  </div>
+                </div>
+
+                {/* Picture URL */}
+                <div className="space-y-2">
+                  <Label htmlFor="picture_url">Profile Picture URL</Label>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Current: {alumni.picture_url || 'Not set'}</p>
+                    <Input
+                      id="picture_url"
+                      value={formData.picture_url || ''}
+                      onChange={(e) => handleInputChange('picture_url', e.target.value)}
+                      placeholder="Ex. https://example.com/photo.jpg"
+                    />
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Current: {alumni.bio || 'Not set'}</p>
+                    <textarea
+                      id="bio"
+                      value={formData.bio || ''}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange('bio', e.target.value)}
+                      placeholder="Ex. Software engineer with 5 years of experience..."
+                      className="w-full min-h-[100px] px-3 py-2 border rounded-md bg-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Emails */}
+                <div className="space-y-2">
+                  <Label htmlFor="emails">Email Addresses</Label>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Current: {alumni.emails?.join(', ') || 'Not set'}</p>
+                    <Input
+                      id="emails"
+                      value={formData.emails || ''}
+                      onChange={(e) => handleInputChange('emails', e.target.value)}
+                      placeholder="Ex. john@example.com, john.smith@gmail.com"
+                    />
+                  </div>
+                </div>
+
+                {/* Phones */}
+                <div className="space-y-2">
+                  <Label htmlFor="phones">Phone Numbers</Label>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Current: {alumni.phones?.join(', ') || 'Not set'}</p>
+                    <Input
+                      id="phones"
+                      value={formData.phones || ''}
+                      onChange={(e) => handleInputChange('phones', e.target.value)}
+                      placeholder="Ex. (555) 123-4567, +1-555-123-4567"
+                    />
+                  </div>
+                </div>
+
+                {/* Career History */}
+                <div className="col-span-2 space-y-2">
+                  <Label>Career History</Label>
+                  <div className="rounded-md border p-4 space-y-4">
+                    {formData.career_history && formData.career_history.length > 0 ? (
+                      formData.career_history.map((exp: any, index: number) => (
+                        <div key={index} className="flex items-start justify-between border-b pb-4 last:border-b-0">
+                          <div className="flex-1 pr-4">
+                            <h4 className="font-semibold">{exp.title}</h4>
+                            <p className="text-sm">{exp.company_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatDate(exp.start_date)} – {formatDate(exp.end_date)}
+                            </p>
+                            {exp.location && (
+                              <p className="text-sm text-muted-foreground">{exp.location}</p>
+                            )}
+                            {exp.description && (
+                              <p className="mt-2 text-sm whitespace-pre-wrap">{exp.description}</p>
+                            )}
+                          </div>
+                          <div className="flex">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditExperience(index)}
+                              className="h-8 w-8"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteExperience(index)}
+                              className="h-8 w-8"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No career history on file.</p>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddExperience}
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Experience
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Education */}
+                <div className="col-span-2 space-y-2">
+                  <Label>Education</Label>
+                  <div className="rounded-md border p-4 space-y-4">
+                    {formData.education && formData.education.length > 0 ? (
+                      formData.education.map((edu: any, index: number) => (
+                        <div key={index} className="flex items-start justify-between border-b pb-4 last:border-b-0">
+                          <div className="flex-1 pr-4">
+                            <h4 className="font-semibold">{edu.school_name}</h4>
+                            <p className="text-sm">{[edu.degree, edu.field_of_study].filter(Boolean).join(', ')}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatEducationDate(edu.start_date)} – {formatEducationDate(edu.end_date)}
+                            </p>
+                            {edu.description && (
+                              <p className="mt-2 text-sm whitespace-pre-wrap">{edu.description}</p>
+                            )}
+                          </div>
+                          <div className="flex">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditEducation(index)}
+                              className="h-8 w-8"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteEducation(index)}
+                              className="h-8 w-8"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No education history on file.</p>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddEducation}
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Education
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Boolean Flags */}
+                <div className="space-y-4 col-span-2">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="manually_verified"
+                        checked={formData.manually_verified || false}
+                        onCheckedChange={(checked) => handleInputChange('manually_verified', checked)}
+                      />
+                      <Label htmlFor="manually_verified" className="text-sm">Manually Verified</Label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -655,21 +1417,22 @@ export default function UpdateAlumniPage() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setFormData({
-                      id: alumni.id,
-                      name: '',
-                      role: '',
-                      companies: [],
-                      industry: [],
-                      location: '',
-                      family_branch: '',
-                      graduation_year: undefined,
-                      big_brother: '',
-                      little_brothers: [],
-                    });
-                    setUpdateSuccess(false);
-                    setBigBrotherError(null);
-                    setNameError(null);
+                     if (!alumni) return;
+                     setFormData({
+                       ...alumni,
+                       companies: (alumni.companies || []).join(', '),
+                       industry: (alumni.industry || []).join(', '),
+                       little_brothers: (alumni.little_brothers || []).join(', '),
+                       emails: (alumni.emails || []).join(', '),
+                       phones: (alumni.phones || []).join(', '),
+                       majors: (alumni.majors || []).join(', '),
+                       minors: (alumni.minors || []).join(', '),
+                       source_sheet: (alumni.source_sheet || []).join(', '),
+                     });
+                     setBigBrotherName(getNameFromId(alumni.big_brother ?? null));
+                     setUpdateSuccess(false);
+                     setBigBrotherError(null);
+                     setNameError(null);
                   }}
                 >
                   Reset
@@ -678,12 +1441,26 @@ export default function UpdateAlumniPage() {
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update Information'}
                 </Button>
               </div>
-
-              
             </form>
           </CardContent>
         </Card>
       )}
+
+      {/* Experience Form Dialog */}
+      <ExperienceForm 
+        isOpen={isExperienceModalOpen}
+        onClose={() => setIsExperienceModalOpen(false)}
+        onSave={handleSaveExperience}
+        experience={editingExperience}
+      />
+
+      {/* Education Form Dialog */}
+      <EducationForm
+        isOpen={isEducationModalOpen}
+        onClose={() => setIsEducationModalOpen(false)}
+        onSave={handleSaveEducation}
+        education={editingEducation}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
