@@ -17,12 +17,13 @@ interface SearchFilterProps {
     hasCompleteProfile?: boolean
   }) => void
   additionalCityOptions?: { label: string; value: string }[]
-  selectedFilters?: {
+  currentFilters?: {
     industry: string[]
+    company: string[]
     role: string[]
     city: string[]
     graduationYear?: [number, number]
-    hasCompleteProfile?: boolean
+    hasCompleteProfile: boolean
   }
 }
 
@@ -64,29 +65,29 @@ export function SearchFilter({
   onSearch, 
   onFilterChange, 
   additionalCityOptions = [],
-  selectedFilters
+  currentFilters,
 }: SearchFilterProps) {
-  const [yearRange, setYearRange] = useState<[number, number]>(
-    selectedFilters?.graduationYear || [2000, 2023]
-  )
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(selectedFilters?.industry || [])
+  const currentYear = new Date().getFullYear()
+  const [yearRange, setYearRange] = useState<[number, number]>([2000, currentYear])
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([])
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(selectedFilters?.role || [])
-  const [selectedCities, setSelectedCities] = useState<string[]>(selectedFilters?.city || [])
-  const [hasCompleteProfile, setHasCompleteProfile] = useState<boolean>(selectedFilters?.hasCompleteProfile || false)
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
+  const [selectedCities, setSelectedCities] = useState<string[]>([])
+  const [hasCompleteProfile, setHasCompleteProfile] = useState<boolean>(false)
 
-  // Update selected filters when they change from props
+  // Sync with current filters when they change
   React.useEffect(() => {
-    if (selectedFilters) {
-      setSelectedIndustries(selectedFilters.industry)
-      setSelectedRoles(selectedFilters.role)
-      setSelectedCities(selectedFilters.city)
-      if (selectedFilters.graduationYear) {
-        setYearRange(selectedFilters.graduationYear)
+    if (currentFilters) {
+      setSelectedIndustries(currentFilters.industry || [])
+      setSelectedCompanies(currentFilters.company || [])
+      setSelectedRoles(currentFilters.role || [])
+      setSelectedCities(currentFilters.city || [])
+      if (currentFilters.graduationYear) {
+        setYearRange(currentFilters.graduationYear)
       }
-      setHasCompleteProfile(selectedFilters.hasCompleteProfile || false)
+      setHasCompleteProfile(currentFilters.hasCompleteProfile || false)
     }
-  }, [selectedFilters])
+  }, [currentFilters])
 
   // Combine default city options with additional ones
   const allCityOptions = React.useMemo(() => {
@@ -186,7 +187,7 @@ export function SearchFilter({
             value={yearRange}
             onValueChange={handleYearChange}
             min={2000}
-            max={2023}
+            max={currentYear}
             step={1}
             className="w-full"
           />

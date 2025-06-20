@@ -10,14 +10,27 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+interface SearchData {
+  query: string
+  filters: {
+    industry: string[]
+    company: string[]
+    role: string[]
+    city: string[]
+    graduationYear?: [number, number]
+    hasCompleteProfile: boolean
+  }
+  aiLocationCities: { label: string; value: string }[]
+}
+
 interface SideNavProps {
   open: boolean
   onClose: () => void
   onOpen: () => void
   onManualSearch: () => void
   onFamilyTrees: () => void
-  previousSearches: string[]
-  onSelectPrevious: (query: string) => void
+  previousSearches: SearchData[]
+  onSelectPrevious: (searchData: SearchData) => void
 }
 
 export function SideNav({
@@ -108,14 +121,14 @@ export function SideNav({
             {previousSearches.length === 0 && (
               <li className="text-xs text-muted-foreground">No previous searches</li>
             )}
-            {previousSearches.map((query, idx) => (
+            {previousSearches.map((searchData, idx) => (
               <li key={idx}>
                 <button
                   className="w-full text-left px-2 py-1 rounded hover:bg-secondary/80 text-sm truncate"
-                  onClick={() => { onSelectPrevious(query); }}
-                  title={query}
+                  onClick={() => { onSelectPrevious(searchData); }}
+                  title={searchData.query}
                 >
-                  {query}
+                  {searchData.query}
                 </button>
               </li>
             ))}

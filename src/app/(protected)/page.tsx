@@ -35,6 +35,7 @@ const examplePrompts = [
 ];
 
 export default function Home() {
+  const currentYear = new Date().getFullYear()
   const [alumni, setAlumni] = useState<Alumni[]>([])
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
@@ -55,6 +56,7 @@ export default function Home() {
     previousSearches,
     addPreviousSearch,
     selectPreviousSearch,
+    registerPreviousSearchHandler,
   } = useLayoutContext()
   const [hasSearched, setHasSearched] = useState(false)
   const [aiQuery, setAiQuery] = useState<string | null>(null)
@@ -64,12 +66,6 @@ export default function Home() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [aiLocationCities, setAiLocationCities] = useState<{ label: string; value: string }[]>([])
-  const [aiSelectedFilters, setAiSelectedFilters] = useState({
-    industry: [] as string[],
-    role: [] as string[],
-    city: [] as string[],
-    graduationYear: [2000, 2023] as [number, number],
-  })
   const [aiInputValue, setAiInputValue] = useState('');
   const [showPromptPopover, setShowPromptPopover] = useState(false);
   const promptLinkRef = useRef<HTMLButtonElement>(null);
@@ -226,15 +222,6 @@ export default function Home() {
     }))
   }
 
-  // When a previous search is selected, re-apply it as an AI search
-  useEffect(() => {
-    if (aiQuery) {
-      setHasSearched(true)
-      setManualSearchMode(false)
-      // TODO: In the future, parse and apply the AI query as filters
-    }
-  }, [aiQuery, setManualSearchMode])
-
   // Handler for AI search bar submit
   const handleAiSearch = async (query: string) => {
     setAiLoading(true)
@@ -261,33 +248,33 @@ export default function Home() {
       }))
       setAiLocationCities(locationCities)
 
-      // Set the selected filters for the UI
-      setAiSelectedFilters({
-        industry: filters.industry ? [filters.industry] : [],
-        role: filters.role || [],
-        city: filters.location || [],
-        graduationYear: [
-          filters.graduation_year_min || 2000,
-          filters.graduation_year_max || 2023,
-        ],
-      })
-
       // The AI now returns city-level locations, so we can use them directly
-      setFilters(prev => ({
-        ...prev,
+      const newFilters = {
         industry: filters.industry ? [filters.industry] : [],
         role: filters.role || [],
         city: filters.location || [],
         company: filters.companies || [],
         graduationYear: [
           filters.graduation_year_min || 2000,
-          filters.graduation_year_max || 2023,
-        ],
+          filters.graduation_year_max || currentYear,
+        ] as [number, number],
+        hasCompleteProfile: false,
+      }
+      setFilters(prev => ({
+        ...prev,
+        ...newFilters
       }))
+
+      // Store the complete search data for previous searches
+      addPreviousSearch({
+        query,
+        filters: newFilters,
+        aiLocationCities: locationCities,
+      })
+
       setAiQuery(query)
       setHasSearched(true)
       setManualSearchMode(false)
-      addPreviousSearch(query)
     } catch (err: any) {
       setAiError('Sorry, I could not understand your search. Please try again!')
     } finally {
@@ -295,14 +282,38 @@ export default function Home() {
     }
   }
 
-  // Handler for previous search selection
+  // Handler for previous search selection - restore exact filters
+  const handlePreviousSearchSelect = (searchData: any) => {
+    console.log('🔄 Restoring previous search:', searchData)
+    console.log('📊 Filters to restore:', searchData.filters)
+    
+    // Restore the AI input value
+    setAiInputValue(searchData.query)
+    console.log('✏️ Set AI input to:', searchData.query)
+    
+    // Restore the filters
+    setFilters(searchData.filters)
+    console.log('🔧 Set filters to:', searchData.filters)
+    
+    // Restore the AI location cities
+    setAiLocationCities(searchData.aiLocationCities)
+    console.log('🌍 Set location cities to:', searchData.aiLocationCities)
+    
+    // Set the search state
+    setAiQuery(searchData.query)
+    setHasSearched(true)
+    setManualSearchMode(false)
+    
+    // Clear any errors
+    setAiError(null)
+    
+    console.log('✅ Previous search restoration complete')
+  }
+
+  // Register the handler for previous search selection
   useEffect(() => {
-    if (aiQuery && previousSearches.includes(aiQuery)) {
-      setHasSearched(true)
-      setManualSearchMode(false)
-      // TODO: In the future, parse and apply the AI query as filters
-    }
-  }, [aiQuery, previousSearches, setManualSearchMode])
+    registerPreviousSearchHandler(handlePreviousSearchSelect)
+  }, [registerPreviousSearchHandler])
 
   // Helper to generate page numbers with ellipsis (industry standard)
   const getPageNumbers = () => {
@@ -462,7 +473,7 @@ export default function Home() {
                 onSearch={setSearchQuery}
                 onFilterChange={handleFilterChange}
                 additionalCityOptions={aiLocationCities}
-                selectedFilters={aiSelectedFilters}
+                currentFilters={filters}
               />
             </motion.div>
             <motion.div 
@@ -485,12 +496,6 @@ export default function Home() {
                     hasCompleteProfile: false,
                   })
                   setSearchQuery('')
-                  setAiSelectedFilters({
-                    industry: [],
-                    role: [],
-                    city: [],
-                    graduationYear: [2000, 2023],
-                  })
                 }}
                 className="text-primary hover:text-primary/80 underline text-sm transition"
               >

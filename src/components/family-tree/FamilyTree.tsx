@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogPortal } from '@/components/ui/dialog';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { AlumniCardContent } from '@/components/ui/alumni-card';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -38,6 +39,49 @@ interface Member {
   big_brother?: string;
   little_brothers: string[];
   family_branch: string;
+  picture_url: string;
+  role: string;
+  companies: string[];
+  bio: string;
+  graduation_year: number;
+  location: string;
+  linkedin_url: string;
+  emails: string[];
+  phones: string[];
+  majors: string[];
+  minors: string[];
+  has_enrichment: boolean;
+  scraped: boolean;
+  career_history: CareerExperience[];
+  education: Education[];
+}
+
+interface CareerExperience {
+  title: string;
+  company_name: string;
+  start_date: string;
+  end_date: string | null;
+  description?: string;
+  location?: string;
+  company_logo?: string;
+  bio?: string;
+  experiences?: Array<{
+    company: string;
+    duration: string;
+    location: string;
+    position: string;
+    description: string | null;
+  }>;
+}
+
+interface Education {
+  degree: string;
+  field_of_study: string;
+  school_name: string;
+  school_logo?: string;
+  start_date: string;
+  end_date: string | null;
+  description?: string;
 }
 
 // Use d3.HierarchyPointNode directly since it has all the methods we need
@@ -214,7 +258,7 @@ export function FamilyTree() {
       try {
         const { data, error } = await supabase
           .from('alumni')
-          .select('id, name, big_brother, little_brothers, family_branch')
+          .select('*')
           .eq('family_branch', selectedFamily);
 
         if (error) throw error;
@@ -356,57 +400,31 @@ export function FamilyTree() {
 
           {/* Member Details Card */}
           {selectedNode && (
-            <Dialog open={!!selectedNode} onOpenChange={() => setSelectedNode(null)}>
-              <CustomDialogContent className="max-w-2xl fixed bottom-4 right-4 top-auto left-auto translate-x-0 translate-y-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom duration-300 ease-in-out motion-safe:animate-none motion-reduce:animate-none border bg-background p-6 shadow-lg rounded-lg">
-                <div className="space-y-6">
-                  {/* Header */}
-                  <div className="flex items-start gap-6">
-                    <div className="relative h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-2xl font-semibold text-primary">
-                        {selectedNode.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold">{selectedNode.name}</h2>
-                      <p className="text-lg text-muted-foreground">{selectedNode.family_branch} Family</p>
-                    </div>
-                  </div>
-
-                  {/* Family Info */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">Family</h3>
-                    <div className="space-y-2">
-                      {selectedNode.big_brother ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">Big Brother:</span>
-                          <span>{members.find(m => m.id === selectedNode.big_brother)?.name || 'Unknown'}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">Big Brother:</span>
-                          <span>None</span>
-                        </div>
-                      )}
-                      {selectedNode.little_brothers && selectedNode.little_brothers.length > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">Little Brothers:</span>
-                          <span>
-                            {selectedNode.little_brothers
-                              .map(id => members.find(m => m.id === id)?.name || 'Unknown')
-                              .join(', ')}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">Little Brothers:</span>
-                          <span>None</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CustomDialogContent>
-            </Dialog>
+            <div className="fixed bottom-4 right-4 top-auto left-auto translate-x-0 translate-y-0 z-50">
+              <AlumniCardContent
+                name={selectedNode.name}
+                pictureUrl={selectedNode.picture_url}
+                role={selectedNode.role}
+                companies={selectedNode.companies}
+                bio={selectedNode.bio}
+                familyBranch={selectedNode.family_branch}
+                graduationYear={selectedNode.graduation_year}
+                location={selectedNode.location}
+                bigBrother={selectedNode.big_brother}
+                littleBrothers={selectedNode.little_brothers}
+                linkedinUrl={selectedNode.linkedin_url}
+                email={selectedNode.emails}
+                phone={selectedNode.phones}
+                major={selectedNode.majors}
+                minor={selectedNode.minors}
+                members={members.map(m => ({ id: m.id, name: m.name }))}
+                hasEnrichment={selectedNode.has_enrichment}
+                scraped={selectedNode.scraped}
+                careerHistory={selectedNode.career_history}
+                education={selectedNode.education}
+                showFamilyBranch={false}
+              />
+            </div>
           )}
         </div>
       </div>

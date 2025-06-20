@@ -8,12 +8,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing query' }, { status: 400 })
   }
 
+  const currentYear = new Date().getFullYear()
   const prompt = `You are a search query parser for an alumni database. Extract search criteria from the user's query and return a JSON object with the following fields:
 - industry: string or null (e.g., "Technology", "Finance", "Healthcare")
 - role: array of strings or null (e.g., ["Software Engineer", "Senior Software Engineer", "Lead Software Engineer"])
 - location: array of strings (e.g., ["San Francisco, CA", "New York, NY"])
 - graduation_year_min: number or null (e.g., 2015)
-- graduation_year_max: number or null (e.g., 2023)
+- graduation_year_max: number or null (e.g., ${currentYear})
 - family_branch: string or null (e.g., "Lambda", "Gamma")
 - companies: array of strings or null (e.g., ["Google", "Microsoft"])
 
