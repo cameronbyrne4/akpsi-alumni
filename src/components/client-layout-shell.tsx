@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation'
 interface SearchData {
   query: string
   filters: {
-    industry: string[]
     company: string[]
     role: string[]
     city: string[]

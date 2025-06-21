@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label'
 interface SearchFilterProps {
   onSearch: (query: string) => void
   onFilterChange: (filters: {
-    industry?: string[]
     company?: string[]
     role?: string[]
     city?: string[]
@@ -18,7 +17,6 @@ interface SearchFilterProps {
   }) => void
   additionalCityOptions?: { label: string; value: string }[]
   currentFilters?: {
-    industry: string[]
     company: string[]
     role: string[]
     city: string[]
@@ -26,17 +24,6 @@ interface SearchFilterProps {
     hasCompleteProfile: boolean
   }
 }
-
-const industryOptions = [
-  { label: 'Technology', value: 'Technology' },
-  { label: 'Finance', value: 'Finance' },
-  { label: 'Healthcare', value: 'Healthcare' },
-  { label: 'Marketing', value: 'Marketing' },
-  { label: 'Consulting', value: 'Consulting' },
-  { label: 'Education', value: 'Education' },
-  { label: 'Government', value: 'Government' },
-  { label: 'Non-Profit', value: 'Non-Profit' },
-]
 
 const companyOptions = [
   { label: 'Google', value: 'Google' },
@@ -69,7 +56,6 @@ export function SearchFilter({
 }: SearchFilterProps) {
   const currentYear = new Date().getFullYear()
   const [yearRange, setYearRange] = useState<[number, number]>([2000, currentYear])
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([])
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
   const [selectedCities, setSelectedCities] = useState<string[]>([])
@@ -78,7 +64,6 @@ export function SearchFilter({
   // Sync with current filters when they change
   React.useEffect(() => {
     if (currentFilters) {
-      setSelectedIndustries(currentFilters.industry || [])
       setSelectedCompanies(currentFilters.company || [])
       setSelectedRoles(currentFilters.role || [])
       setSelectedCities(currentFilters.city || [])
@@ -117,11 +102,6 @@ export function SearchFilter({
     onFilterChange({ graduationYear: newRange })
   }
 
-  const handleIndustryChange = (value: string[]) => {
-    setSelectedIndustries(value)
-    onFilterChange({ industry: value })
-  }
-
   const handleCompanyChange = (value: string[]) => {
     setSelectedCompanies(value)
     onFilterChange({ company: value })
@@ -151,13 +131,6 @@ export function SearchFilter({
         onChange={(e) => onSearch(e.target.value)}
       />
       <div className="flex flex-wrap gap-4">
-        <MultiSelect
-          options={industryOptions}
-          selected={selectedIndustries}
-          onChange={handleIndustryChange}
-          placeholder="Industry"
-        />
-
         <MultiSelect
           options={companyOptions}
           selected={selectedCompanies}

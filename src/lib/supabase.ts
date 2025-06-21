@@ -33,7 +33,6 @@ export type Alumni = {
   bio?: string
   role?: string  // Should be optional since DB allows NULL
   companies?: string[]  // Should be optional since you're creating empty records
-  industry?: string[]
   big_brother?: string
   little_brothers?: string[]
   family_branch?: string  // Should be optional since DB allows NULL

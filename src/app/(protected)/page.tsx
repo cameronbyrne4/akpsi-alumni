@@ -43,7 +43,6 @@ export default function Home() {
   const [totalCount, setTotalCount] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState({
-    industry: [] as string[],
     company: [] as string[],
     role: [] as string[],
     city: [] as string[],
@@ -120,10 +119,6 @@ export default function Home() {
     // Search
     if (searchQuery) {
       q = q.or(`name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%,companies.cs.{${searchQuery}}`)
-    }
-    // Industry
-    if (filters.industry.length > 0) {
-      q = q.in('industry', filters.industry)
     }
     // Company
     if (filters.company.length > 0) {
@@ -209,7 +204,6 @@ export default function Home() {
   }, [page]);
 
   const handleFilterChange = (newFilters: {
-    industry?: string[]
     company?: string[]
     role?: string[]
     city?: string[]
@@ -250,7 +244,6 @@ export default function Home() {
 
       // The AI now returns city-level locations, so we can use them directly
       const newFilters = {
-        industry: filters.industry ? [filters.industry] : [],
         role: filters.role || [],
         city: filters.location || [],
         company: filters.companies || [],
@@ -488,7 +481,6 @@ export default function Home() {
               <button
                 onClick={() => {
                   setFilters({
-                    industry: [],
                     company: [],
                     role: [],
                     city: [],

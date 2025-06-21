@@ -13,7 +13,6 @@ const supabase = createBrowserClient(
 interface SearchData {
   query: string
   filters: {
-    industry: string[]
     company: string[]
     role: string[]
     city: string[]
