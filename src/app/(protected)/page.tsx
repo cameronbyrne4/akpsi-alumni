@@ -116,22 +116,60 @@ export default function Home() {
         .not('career_history', 'eq', '{"bio":null,"experiences":[],"picture_url":null}')
     }
 
-    // Search
+    // Search - now includes career_history for enriched/scraped profiles
     if (searchQuery) {
-      q = q.or(`name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%,companies.cs.{${searchQuery}}`)
+      q = q.or(
+        // Basic columns
+        `name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%,companies.cs.{${searchQuery}}` +
+        // Career history for enriched profiles (search all array elements)
+        `,jsonb_path_query_array(career_history, '$[*].title')::text.ilike.%${searchQuery}%,jsonb_path_query_array(career_history, '$[*].company_name')::text.ilike.%${searchQuery}%` +
+        // Career history for scraped profiles (experiences array)
+        `,jsonb_path_query_array(career_history, '$[*].experiences[*].position')::text.ilike.%${searchQuery}%,jsonb_path_query_array(career_history, '$[*].experiences[*].company')::text.ilike.%${searchQuery}%`
+      )
     }
-    // Company
+    
+    // Company - search both basic companies array and career_history
     if (filters.company.length > 0) {
-      q = q.overlaps('companies', filters.company)
+      const companyConditions = filters.company.map(company => 
+        // Basic companies column
+        `companies.ilike.%${company}%` +
+        // Career history for enriched profiles (search all array elements)
+        `,jsonb_path_query_array(career_history, '$[*].company_name')::text.ilike.%${company}%` +
+        // Career history for scraped profiles
+        `,jsonb_path_query_array(career_history, '$[*].experiences[*].company')::text.ilike.%${company}%`
+      ).join(',')
+      console.log('🔍 Company filter conditions:', companyConditions)
+      q = q.or(companyConditions)
     }
-    // Role
+    
+    // Role - search both basic role column and career_history
     if (filters.role.length > 0) {
-      q = q.in('role', filters.role)
+      const roleConditions = filters.role.map(role => 
+        // Basic role column
+        `role.ilike.%${role}%` +
+        // Career history for enriched profiles (search all array elements)
+        `,jsonb_path_query_array(career_history, '$[*].title')::text.ilike.%${role}%` +
+        // Career history for scraped profiles
+        `,jsonb_path_query_array(career_history, '$[*].experiences[*].position')::text.ilike.%${role}%`
+      ).join(',')
+      console.log('👔 Role filter conditions:', roleConditions)
+      q = q.or(roleConditions)
     }
-    // City
+    
+    // City - search both basic location column and career_history
     if (filters.city.length > 0) {
-      q = q.in('location', filters.city)
+      const cityConditions = filters.city.map(city => 
+        // Basic location column
+        `location.ilike.%${city}%` +
+        // Career history for enriched profiles (search all array elements)
+        `,jsonb_path_query_array(career_history, '$[*].location')::text.ilike.%${city}%` +
+        // Career history for scraped profiles
+        `,jsonb_path_query_array(career_history, '$[*].experiences[*].location')::text.ilike.%${city}%`
+      ).join(',')
+      console.log('🌍 City filter conditions:', cityConditions)
+      q = q.or(cityConditions)
     }
+    
     // Graduation year
     if (filters.graduationYear) {
       const [minYear, maxYear] = filters.graduationYear

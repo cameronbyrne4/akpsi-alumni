@@ -57,15 +57,17 @@ Important role handling rules:
 1. When a general role is mentioned (e.g., "consulting"), include all variations of that role
 2. For consulting roles, include: Consultant, Senior Consultant, Lead Consultant, Principal Consultant, Managing Consultant, Strategy Consultant, Management Consultant, Business Consultant, Technology Consultant, Implementation Consultant
 3. For engineering roles, include: Engineer, Senior Engineer, Lead Engineer, Principal Engineer, Staff Engineer, Software Engineer, Data Engineer, DevOps Engineer, Systems Engineer, Cloud Engineer, Machine Learning Engineer, AI Engineer
-4. For management roles, include: Manager, Senior Manager, Director, VP, C-level, Project Manager, Program Manager, Product Manager, Engineering Manager, Technical Manager, Operations Manager, Business Manager
+4. For management roles, include: Manager, Senior Manager, Director, VP, C-level, Project Manager, Program Manager, Product Manager, Engineering Manager, Technical Manager, Operations Manager, Business Manager, Portfolio Manager, Brand Manager, Marketing Manager
 5. For analyst roles, include: Analyst, Senior Analyst, Lead Analyst, Principal Analyst, Business Analyst, Data Analyst, Financial Analyst, Investment Analyst, Market Analyst, Research Analyst, Strategy Analyst
 6. For finance roles, include: Financial Analyst, Investment Banker, Portfolio Manager, Risk Analyst, Credit Analyst, Financial Advisor, Investment Advisor, Wealth Manager, Financial Consultant, Banking Associate, Banking Analyst
-7. For product roles, include: Product Manager, Senior Product Manager, Product Director, Product Lead, Product Owner, Technical Product Manager, Product Analyst, Product Strategist
-8. For marketing roles, include: Marketing Manager, Marketing Director, Brand Manager, Digital Marketing Manager, Marketing Analyst, Marketing Specialist, Growth Manager, Marketing Strategist
+7. For product roles, include: Product Manager, Senior Product Manager, Product Director, Product Lead, Product Owner, Technical Product Manager, Product Analyst, Product Strategist, Associate Product Manager
+8. For marketing roles, include: Marketing Manager, Marketing Director, Brand Manager, Digital Marketing Manager, Marketing Analyst, Marketing Specialist, Growth Manager, Marketing Strategist, Product Marketing Manager
 9. For sales roles, include: Sales Representative, Account Executive, Sales Manager, Business Development Manager, Sales Director, Account Manager, Sales Operations Manager, Sales Analyst
 10. For operations roles, include: Operations Manager, Operations Director, Supply Chain Manager, Logistics Manager, Process Manager, Operations Analyst, Business Operations Manager
 11. For strategy roles, include: Strategy Manager, Strategy Director, Strategic Planner, Business Strategist, Corporate Strategy Manager, Strategic Initiatives Manager
 12. For entrepreneurship roles, include: Founder, Co-Founder, CEO, CTO, COO, Entrepreneur, Startup Founder, Business Owner
+13. For design roles, include: Designer, Product Designer, UX Designer, UI Designer, Visual Designer, Brand Designer, Design Manager, Senior Designer
+14. For research roles, include: Researcher, Research Scientist, Data Scientist, Research Analyst, Research Manager, Senior Researcher, Principal Researcher
 
 Important location handling rules:
 1. Always return city-level locations with state (e.g., "San Francisco, CA")
