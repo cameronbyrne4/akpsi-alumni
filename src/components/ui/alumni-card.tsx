@@ -6,6 +6,20 @@ import { AlumniProfileDialog } from '@/components/ui/alumni-profile-dialog'
 import { ContactIcons } from '@/components/ui/contact-icons'
 import { formatLocation, getRandomAvatar } from '@/lib/utils'
 import Image from 'next/image'
+import { getCompanyColor } from '@/lib/company-colors'
+
+function CompanyBadge({ company }: { company: string }) {
+  const { bg, text } = getCompanyColor(company)
+
+  return (
+    <Badge
+      style={{ backgroundColor: bg, color: text }}
+      className="text-xs font-medium px-2 py-1 border-0"
+    >
+      {company}
+    </Badge>
+  )
+}
 
 interface CareerExperience {
   title: string;
@@ -87,50 +101,50 @@ export function AlumniCard({
     .join('')
     .toUpperCase()
 
-  // Determine the best role to display based on enrichment level
-  const getBestRole = () => {
-    // Enriched profiles should use the role column first
-    if (hasEnrichment && role) {
-      return role;
-    }
-    
+  // Determine the best role and company to display
+  const { role: bestRole, company: currentCompany } = (() => {
+    // Handle enriched profiles with career history
     if (hasEnrichment && careerHistory && careerHistory.length > 0) {
-      // Use most recent career history title as fallback
-      const currentRole = careerHistory.find((exp: CareerExperience) => exp.end_date === 'Present' || exp.end_date === null);
-      if (currentRole?.title) return currentRole.title;
-      return careerHistory[0]?.title || role;
-    }
-    
-    if (scraped && careerHistory && careerHistory.length > 0) {
-      // For scraped but not enriched, look for experiences array
-      const experiences = careerHistory.find((exp: CareerExperience) => exp.experiences);
-      if (experiences?.experiences && experiences.experiences.length > 0) {
-        const currentExp = experiences.experiences.find(exp => exp.duration?.includes('Present') || exp.duration?.includes('to 2024'));
-        if (currentExp?.position) return currentExp.position;
-        return experiences.experiences[0]?.position || role;
-      }
-    }
-    
-    return role;
-  };
+      const currentExperiences = careerHistory.filter(
+        (exp) => exp.end_date === 'Present' || exp.end_date === null
+      );
 
-  // Get the most current company
-  const getCurrentCompany = () => {
-    if (hasEnrichment && careerHistory && careerHistory.length > 0) {
-      const currentExp = careerHistory.find(exp => exp.end_date === 'Present' || exp.end_date === null);
-      if (currentExp?.company_name) return currentExp.company_name;
-      return careerHistory[0]?.company_name || null;
-    }
-    if (scraped && careerHistory && careerHistory.length > 0) {
-      const experiences = (Array.isArray(careerHistory) ? careerHistory[0] : careerHistory)?.experiences;
-      if (experiences && experiences.length > 0) {
-        const currentExp = experiences.find(exp => exp.duration?.includes('Present'));
-        if (currentExp?.company) return currentExp.company;
-        return experiences[0]?.company || null;
+      if (currentExperiences.length > 0) {
+        // If there are multiple current roles, sort by start date to find the most recent one.
+        if (currentExperiences.length > 1) {
+          currentExperiences.sort((a, b) => {
+            try {
+              return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+            } catch (e) {
+              return 0; // Don't sort if dates are invalid
+            }
+          });
+        }
+        const mostRecentExperience = currentExperiences[0];
+        return { role: mostRecentExperience.title, company: mostRecentExperience.company_name };
+      }
+      
+      const mostRecentExperience = careerHistory[0];
+      if (mostRecentExperience) {
+        return { role: mostRecentExperience.title, company: mostRecentExperience.company_name };
       }
     }
-    return companies && companies.length > 0 ? companies[0] : null;
-  };
+
+    // Handle scraped profiles
+    if (scraped && careerHistory && careerHistory.length > 0) {
+      const experiencesList = (Array.isArray(careerHistory) ? careerHistory[0] : careerHistory)?.experiences;
+      if (experiencesList && experiencesList.length > 0) {
+        const presentExperiences = experiencesList.filter(exp => exp.duration?.includes('Present'));
+        const experienceToShow = presentExperiences.length > 0 ? presentExperiences[0] : experiencesList[0];
+        if (experienceToShow) {
+          return { role: experienceToShow.position, company: experienceToShow.company };
+        }
+      }
+    }
+
+    // Fallback to top-level props if no career history
+    return { role, company: companies && companies.length > 0 ? companies[0] : null };
+  })();
 
   // Determine the best companies to display based on enrichment level
   const getBestCompanies = () => {
@@ -186,8 +200,6 @@ export function AlumniCard({
     return educationParts;
   };
 
-  const bestRole = getBestRole();
-  const currentCompany = getCurrentCompany();
   const bestCompanies = getBestCompanies();
   const bestBio = getBestBio();
   const bestEducation = getBestEducation();
@@ -253,16 +265,14 @@ export function AlumniCard({
             <div className="flex-grow pt-4">
               {/* Companies */}
               {bestCompanies && bestCompanies.length > 0 && (
-                <div className="space-y-2 text-left">
+                <div className="space-y-2 text-left mb-4">
                   <div className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
                     <Building2 className="h-3 w-3" />
-                    <span>Experience</span>
+                    <span>Companies</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {bestCompanies.slice(0, 3).map((company: string) => (
-                      <Badge key={company} variant="secondary" className="text-xs px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200">
-                        {company}
-                      </Badge>
+                      <CompanyBadge key={company} company={company} />
                     ))}
                     {bestCompanies.length > 3 && (
                       <Badge variant="outline" className="text-xs px-2 py-1 text-gray-500">
@@ -348,50 +358,50 @@ export function AlumniCardContent({
     .join('')
     .toUpperCase()
 
-  // Determine the best role to display based on enrichment level
-  const getBestRole = () => {
-    // Enriched profiles should use the role column first
-    if (hasEnrichment && role) {
-      return role;
-    }
-    
+  // Determine the best role and company to display
+  const { role: bestRole, company: currentCompany } = (() => {
+    // Handle enriched profiles with career history
     if (hasEnrichment && careerHistory && careerHistory.length > 0) {
-      // Use most recent career history title as fallback
-      const currentRole = careerHistory.find((exp: CareerExperience) => exp.end_date === 'Present' || exp.end_date === null);
-      if (currentRole?.title) return currentRole.title;
-      return careerHistory[0]?.title || role;
-    }
-    
-    if (scraped && careerHistory && careerHistory.length > 0) {
-      // For scraped but not enriched, look for experiences array
-      const experiences = careerHistory.find((exp: CareerExperience) => exp.experiences);
-      if (experiences?.experiences && experiences.experiences.length > 0) {
-        const currentExp = experiences.experiences.find(exp => exp.duration?.includes('Present') || exp.duration?.includes('to 2024'));
-        if (currentExp?.position) return currentExp.position;
-        return experiences.experiences[0]?.position || role;
-      }
-    }
-    
-    return role;
-  };
+      const currentExperiences = careerHistory.filter(
+        (exp) => exp.end_date === 'Present' || exp.end_date === null
+      );
 
-  // Get the most current company
-  const getCurrentCompany = () => {
-    if (hasEnrichment && careerHistory && careerHistory.length > 0) {
-      const currentExp = careerHistory.find(exp => exp.end_date === 'Present' || exp.end_date === null);
-      if (currentExp?.company_name) return currentExp.company_name;
-      return careerHistory[0]?.company_name || null;
-    }
-    if (scraped && careerHistory && careerHistory.length > 0) {
-      const experiences = (Array.isArray(careerHistory) ? careerHistory[0] : careerHistory)?.experiences;
-      if (experiences && experiences.length > 0) {
-        const currentExp = experiences.find(exp => exp.duration?.includes('Present'));
-        if (currentExp?.company) return currentExp.company;
-        return experiences[0]?.company || null;
+      if (currentExperiences.length > 0) {
+        // If there are multiple current roles, sort by start date to find the most recent one.
+        if (currentExperiences.length > 1) {
+          currentExperiences.sort((a, b) => {
+            try {
+              return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+            } catch (e) {
+              return 0; // Don't sort if dates are invalid
+            }
+          });
+        }
+        const mostRecentExperience = currentExperiences[0];
+        return { role: mostRecentExperience.title, company: mostRecentExperience.company_name };
+      }
+      
+      const mostRecentExperience = careerHistory[0];
+      if (mostRecentExperience) {
+        return { role: mostRecentExperience.title, company: mostRecentExperience.company_name };
       }
     }
-    return companies && companies.length > 0 ? companies[0] : null;
-  };
+
+    // Handle scraped profiles
+    if (scraped && careerHistory && careerHistory.length > 0) {
+      const experiencesList = (Array.isArray(careerHistory) ? careerHistory[0] : careerHistory)?.experiences;
+      if (experiencesList && experiencesList.length > 0) {
+        const presentExperiences = experiencesList.filter(exp => exp.duration?.includes('Present'));
+        const experienceToShow = presentExperiences.length > 0 ? presentExperiences[0] : experiencesList[0];
+        if (experienceToShow) {
+          return { role: experienceToShow.position, company: experienceToShow.company };
+        }
+      }
+    }
+
+    // Fallback to top-level props if no career history
+    return { role, company: companies && companies.length > 0 ? companies[0] : null };
+  })();
 
   // Determine the best companies to display based on enrichment level
   const getBestCompanies = () => {
@@ -447,8 +457,6 @@ export function AlumniCardContent({
     return educationParts;
   };
 
-  const bestRole = getBestRole();
-  const currentCompany = getCurrentCompany();
   const bestCompanies = getBestCompanies();
   const bestBio = getBestBio();
   const bestEducation = getBestEducation();
@@ -512,16 +520,14 @@ export function AlumniCardContent({
         <div className="flex-grow pt-4">
           {/* Companies */}
           {bestCompanies && bestCompanies.length > 0 && (
-            <div className="space-y-2 text-left">
+            <div className="space-y-2 text-left mb-4">
               <div className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
                 <Building2 className="h-3 w-3" />
                 <span>Experience</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {bestCompanies.slice(0, 3).map((company: string) => (
-                  <Badge key={company} variant="secondary" className="text-xs px-2 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    {company}
-                  </Badge>
+                  <CompanyBadge key={company} company={company} />
                 ))}
                 {bestCompanies.length > 3 && (
                   <Badge variant="outline" className="text-xs px-2 py-1 text-gray-500">

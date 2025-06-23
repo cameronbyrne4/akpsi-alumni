@@ -1,0 +1,22 @@
+{
+  "fortune500": [
+    "Apple", "Microsoft", "Amazon", "Google", "Meta", "Tesla", "Netflix"
+  ],
+  "unicorns": [
+    "Stripe", "SpaceX", "Canva", "Discord", "Figma", "Notion"
+  ],
+  "industries": {
+    "tech": ["Apple", "Microsoft", "Google", "Meta", "Netflix"],
+    "finance": ["JPMorgan", "Goldman Sachs", "Morgan Stanley"],
+    "healthcare": ["Johnson & Johnson", "Pfizer", "UnitedHealth"],
+    "consulting": ["McKinsey", "BCG", "Bain", "Deloitte", "PwC", "Ernst & Young", "EY"]
+  },
+  "colors": {
+    "fortune500": "#fbbf24",
+    "unicorn": "#a855f7", 
+    "tech": "#3b82f6",
+    "finance": "#10b981",
+    "healthcare": "#ef4444",
+    "consulting": "#8B4513"
+  }
+} 
