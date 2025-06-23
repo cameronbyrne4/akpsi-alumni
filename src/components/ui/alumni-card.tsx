@@ -4,7 +4,8 @@ import { MapPin, GraduationCap, Building2, Mail, Phone, ExternalLink } from 'luc
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { AlumniProfileDialog } from '@/components/ui/alumni-profile-dialog'
 import { ContactIcons } from '@/components/ui/contact-icons'
-import { formatLocation } from '@/lib/utils'
+import { formatLocation, getRandomAvatar } from '@/lib/utils'
+import Image from 'next/image'
 
 interface CareerExperience {
   title: string;
@@ -195,42 +196,64 @@ export function AlumniCard({
     <Dialog>
       <DialogTrigger asChild>
         <Card className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-white to-gray-50/50 card-glow flex flex-col h-full">
-          {/* Header with gradient background */}
-          <div className="relative h-32 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+          {/* New header section */}
+          <div className="relative">
+            {/* Banner */}
+            <div className="h-16 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            </div>
             
-            {/* Profile section */}
-            <div className="relative p-6">
-              <div className="flex items-start gap-4">
-                {/* Avatar */}
-                <div className="relative h-16 w-16 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border-2 border-white">
-                  <span className="text-lg font-bold text-primary">
-                    {initials}
-                  </span>
-                </div>
-                
-                {/* Name and role */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-primary transition-colors">
-                    {name}
-                  </h3>
-                  {bestRole && (
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                      {bestRole}
-                      {currentCompany && ` @ ${currentCompany}`}
-                    </p>
-                  )}
-                </div>
+            {/* Avatar */}
+            <div className="absolute top-16 left-1/2 -translate-y-1/2 -translate-x-1/2">
+              <div className="relative h-20 w-20 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border-4 border-white">
+                <Image
+                  src={getRandomAvatar(name)}
+                  alt={name}
+                  layout="fill"
+                  objectFit="cover"
+                  className="rounded-full"
+                />
               </div>
             </div>
+            
+            {/* Graduation Year Badge */}
+            {graduationYear && (
+              <div className="absolute top-3 left-3">
+                <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
+                  <GraduationCap className="h-3 w-3 mr-1" />
+                  {graduationYear}
+                </Badge>
+              </div>
+            )}
+            
+            {/* Family Branch Badge */}
+            {familyBranch && (
+              <div className="absolute top-3 right-3">
+                <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
+                  {familyBranch}
+                </Badge>
+              </div>
+            )}
           </div>
 
-          {/* Content */}
-          <CardContent className="p-6 pt-4 flex flex-col h-full">
-            <div className="space-y-4 flex-grow">
+          {/* New content section */}
+          <CardContent className="p-6 pt-12 flex flex-col flex-grow text-center">
+            {/* Name and Role */}
+            <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
+              {name}
+            </h3>
+            {bestRole && (
+              <p className="text-sm text-gray-600 mt-1">
+                {bestRole}
+                {currentCompany && ` @ ${currentCompany}`}
+              </p>
+            )}
+
+            {/* Middle content that grows */}
+            <div className="flex-grow pt-4">
               {/* Companies */}
               {bestCompanies && bestCompanies.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2 text-left">
                   <div className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
                     <Building2 className="h-3 w-3" />
                     <span>Experience</span>
@@ -249,41 +272,24 @@ export function AlumniCard({
                   </div>
                 </div>
               )}
-
-              {/* Location and graduation */}
-              <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                {graduationYear && (
-                  <div className="flex items-center gap-1.5">
-                    <GraduationCap className="h-3.5 w-3.5 text-gray-400" />
-                    <span>Class of {graduationYear}</span>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Bottom line: Contact icons on left, location on right - NOW STICKY TO BOTTOM */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-auto">
+            {/* Bottom line: Contact, Location, Grad Year */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
               <ContactIcons 
                 hasEmail={!!email && email.length > 0}
                 hasPhone={!!phone && phone.length > 0}
                 hasLinkedin={!!linkedinUrl}
               />
-              {location && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0 max-w-48">
-                  <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="truncate" title={location}>{formatLocation(location)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Family branch indicator */}
-            {familyBranch && (
-              <div className="absolute top-3 right-3">
-                <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
-                  {familyBranch}
-                </Badge>
+              <div className="flex items-center gap-2">
+                {location && (
+                  <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0 max-w-40">
+                    <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="truncate" title={location}>{formatLocation(location)}</span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </DialogTrigger>
@@ -449,42 +455,64 @@ export function AlumniCardContent({
 
   return (
     <Card className="group relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-white to-gray-50/50 card-glow flex flex-col h-full">
-      {/* Header with gradient background */}
-      <div className="relative h-32 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+      {/* New header section */}
+      <div className="relative">
+        {/* Banner */}
+        <div className="h-16 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+        </div>
         
-        {/* Profile section */}
-        <div className="relative p-6">
-          <div className="flex items-start gap-4">
-            {/* Avatar */}
-            <div className="relative h-16 w-16 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border-2 border-white">
-              <span className="text-lg font-bold text-primary">
-                {initials}
-              </span>
-            </div>
-            
-            {/* Name and role */}
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-primary transition-colors">
-                {name}
-              </h3>
-              {bestRole && (
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                  {bestRole}
-                  {currentCompany && ` @ ${currentCompany}`}
-                </p>
-              )}
-            </div>
+        {/* Avatar */}
+        <div className="absolute top-16 left-1/2 -translate-y-1/2 -translate-x-1/2">
+          <div className="relative h-20 w-20 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border-4 border-white">
+            <Image
+              src={getRandomAvatar(name)}
+              alt={name}
+              layout="fill"
+              objectFit="cover"
+              className="rounded-full"
+            />
           </div>
         </div>
+        
+        {/* Graduation Year Badge */}
+        {graduationYear && (
+          <div className="absolute top-3 left-3">
+            <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
+              <GraduationCap className="h-3 w-3 mr-1" />
+              {graduationYear}
+            </Badge>
+          </div>
+        )}
+        
+        {/* Family Branch Badge */}
+        {familyBranch && showFamilyBranch && (
+          <div className="absolute top-3 right-3">
+            <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
+              {familyBranch}
+            </Badge>
+          </div>
+        )}
       </div>
 
-      {/* Content */}
-      <CardContent className="p-6 pt-4 flex flex-col h-full">
-        <div className="space-y-4 flex-grow">
+      {/* New content section */}
+      <CardContent className="p-6 pt-12 flex flex-col flex-grow text-center">
+        {/* Name and Role */}
+        <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">
+          {name}
+        </h3>
+        {bestRole && (
+          <p className="text-sm text-gray-600 mt-1">
+            {bestRole}
+            {currentCompany && ` @ ${currentCompany}`}
+          </p>
+        )}
+
+        {/* Middle content that grows */}
+        <div className="flex-grow pt-4">
           {/* Companies */}
           {bestCompanies && bestCompanies.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 text-left">
               <div className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
                 <Building2 className="h-3 w-3" />
                 <span>Experience</span>
@@ -503,41 +531,24 @@ export function AlumniCardContent({
               </div>
             </div>
           )}
-
-          {/* Location and graduation */}
-          <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-            {graduationYear && (
-              <div className="flex items-center gap-1.5">
-                <GraduationCap className="h-3.5 w-3.5 text-gray-400" />
-                <span>Class of {graduationYear}</span>
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Bottom line: Contact icons on left, location on right - NOW STICKY TO BOTTOM */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-auto">
+        {/* Bottom line: Contact, Location, Grad Year */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <ContactIcons 
             hasEmail={!!email && email.length > 0}
             hasPhone={!!phone && phone.length > 0}
             hasLinkedin={!!linkedinUrl}
           />
-          {location && (
-            <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0 max-w-48">
-              <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-              <span className="truncate" title={location}>{formatLocation(location)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Family branch indicator */}
-        {familyBranch && showFamilyBranch && (
-          <div className="absolute top-3 right-3">
-            <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
-              {familyBranch}
-            </Badge>
+          <div className="flex items-center gap-2">
+            {location && (
+              <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0 max-w-40">
+                <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                <span className="truncate" title={location}>{formatLocation(location)}</span>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   )

@@ -379,3 +379,27 @@ export function matchesCityFilter(location: string | null | undefined, filterCit
   console.log(`🔍 No match found`);
   return false;
 }
+
+const avatarImages = [
+  '/avatars/pfpsamp1.png',
+  '/avatars/pfpsamp2.png',
+  '/avatars/pfpsamp3.png',
+  '/avatars/pfpsamp4.png',
+  '/avatars/pfpsamp5.png',
+  '/avatars/pfpsamp6.png',
+  '/avatars/pfpsamp7.png',
+  '/avatars/pfpsamp8.png',
+];
+
+export function getRandomAvatar(name: string): string {
+  // Simple hash function to get a number from the name
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    const char = name.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Convert to 32bit integer
+  }
+  
+  const index = Math.abs(hash) % avatarImages.length;
+  return avatarImages[index];
+}
