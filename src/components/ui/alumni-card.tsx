@@ -7,6 +7,7 @@ import { ContactIcons } from '@/components/ui/contact-icons'
 import { formatLocation, getRandomAvatar } from '@/lib/utils'
 import Image from 'next/image'
 import { getCompanyColor } from '@/lib/company-colors'
+import { useState } from 'react'
 
 // Pastel color mapping for family branches
 const familyColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -86,8 +87,29 @@ interface AlumniCardProps {
   showFamilyBranch?: boolean
 }
 
+// Reusable avatar component with fallback logic
+function ProfileAvatar({ name, pictureUrl, size = 80 }: { name: string; pictureUrl?: string | null; size?: number }) {
+  const [imgSrc, setImgSrc] = useState(pictureUrl || getRandomAvatar(name));
+  return (
+    <span
+      className="block rounded-full overflow-hidden bg-white border-4 border-white shadow-lg"
+      style={{ width: size, height: size }}
+    >
+      <img
+        src={imgSrc}
+        alt={name}
+        width={size}
+        height={size}
+        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+        onError={() => setImgSrc(getRandomAvatar(name))}
+      />
+    </span>
+  );
+}
+
 export function AlumniCard({
   name,
+  pictureUrl,
   role,
   companies = [],
   bio = '',
@@ -230,15 +252,7 @@ export function AlumniCard({
             
             {/* Avatar */}
             <div className="absolute top-16 left-1/2 -translate-y-1/2 -translate-x-1/2">
-              <div className="relative h-20 w-20 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border-4 border-white">
-                <Image
-                  src={getRandomAvatar(name)}
-                  alt={name}
-                  layout="fill"
-                  objectFit="cover"
-                  className="rounded-full"
-                />
-              </div>
+              <ProfileAvatar name={name} pictureUrl={pictureUrl} size={80} />
             </div>
             
             {/* Graduation Year Badge */}
@@ -348,6 +362,7 @@ export function AlumniCard({
 
 export function AlumniCardContent({
   name,
+  pictureUrl,
   role,
   companies = [],
   bio = '',
@@ -479,7 +494,7 @@ export function AlumniCardContent({
   const bestEducation = getBestEducation();
 
   return (
-    <Card className="group relative overflow-hidden border-0 shadow-md bg-white hover:card-glow flex flex-col h-full">
+    <Card className="group relative overflow-hidden border-0 shadow-md bg-white hover:card-glow flex flex-col h-full w-80 h-[420px]">
       {/* New header section */}
       <div className="relative">
         {/* Banner */}
@@ -489,15 +504,7 @@ export function AlumniCardContent({
         
         {/* Avatar */}
         <div className="absolute top-16 left-1/2 -translate-y-1/2 -translate-x-1/2">
-          <div className="relative h-20 w-20 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border-4 border-white">
-            <Image
-              src={getRandomAvatar(name)}
-              alt={name}
-              layout="fill"
-              objectFit="cover"
-              className="rounded-full"
-            />
-          </div>
+          <ProfileAvatar name={name} pictureUrl={pictureUrl} size={80} />
         </div>
         
         {/* Graduation Year Badge */}

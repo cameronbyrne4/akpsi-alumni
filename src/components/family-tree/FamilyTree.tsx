@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogPortal } from '@/components/ui/dialog';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { AlumniCardContent } from '@/components/ui/alumni-card';
+import { getRandomAvatar } from '@/lib/utils';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -103,6 +104,7 @@ export function FamilyTree() {
   const [isOpen, setIsOpen] = useState(false);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [selectedNode, setSelectedNode] = useState<Member | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const buildHierarchy = (familyName: string): TreeNode | null => {
     const familyMembers = members.filter(member => member.family_branch === familyName);
@@ -124,7 +126,9 @@ export function FamilyTree() {
     };
 
     const hierarchy = d3.hierarchy(buildTree(root));
-    const tree = d3.tree<Member>().size([800, 800]);
+    const tree = d3.tree<Member>()
+      .size([800, 800])
+      .separation((a, b) => a.parent === b.parent ? 2 : 1.5);
     return tree(hierarchy);
   };
 
@@ -138,18 +142,60 @@ export function FamilyTree() {
     const height = 1000;
     const margin = { top: 50, right: 50, bottom: 50, left: 50 };
 
+    // Create or select a single <defs> section
+    let defs = svg.select('defs') as d3.Selection<SVGDefsElement, unknown, null, undefined>;
+    if (defs.empty()) {
+      defs = svg.append('defs') as d3.Selection<SVGDefsElement, unknown, null, undefined>;
+      // Add the background pattern only once
+      const backgroundPattern = defs.append('pattern')
+        .attr('id', 'dotted-grid')
+        .attr('width', 32)
+        .attr('height', 32)
+        .attr('patternUnits', 'userSpaceOnUse');
+      backgroundPattern.append('circle')
+        .attr('cx', 16)
+        .attr('cy', 16)
+        .attr('r', 1.5)
+        .attr('fill', '#e5e7eb');
+    }
+    // Remove only old clipPaths before adding new ones
+    defs.selectAll('clipPath').remove();
+    // Create clip paths for all nodes
+    treeData.descendants().forEach(d => {
+      defs.append('clipPath')
+        .attr('id', `clip-${d.data.id}`)
+        .append('circle')
+        .attr('cx', 0)
+        .attr('cy', 0)
+        .attr('r', selectedNode?.id === d.data.id ? 30 : 25);
+    });
+
+    // Create background rectangle with pattern that will transform with zoom
+    const backgroundGroup = svg.append('g')
+      .attr('class', 'background-group');
+
+    backgroundGroup.append('rect')
+      .attr('x', -2000)
+      .attr('y', -2000)
+      .attr('width', 4000)
+      .attr('height', 4000)
+      .attr('fill', 'url(#dotted-grid)');
+
+    // Create the tree container group (after background)
+    const container = svg.append('g')
+      .attr('class', 'tree-container');
+
     // Initialize zoom behavior
     zoomRef.current = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.3, 3])
       .on('zoom', (event) => {
+        backgroundGroup.attr('transform', event.transform);
         container.attr('transform', event.transform);
+        svg.select('pattern#dotted-grid').attr('patternTransform', event.transform);
       });
 
     // Apply zoom behavior to SVG
     svg.call(zoomRef.current);
-
-    const container = svg.append('g')
-      .attr('class', 'tree-container');
 
     // Create links (connections between nodes)
     const links = treeData.links();
@@ -183,23 +229,70 @@ export function FamilyTree() {
         setSelectedNode(d.data);
       });
 
-    // Add circles for nodes
+    // Add a border circle for each node (below the image)
     nodes.append('circle')
+      .attr('class', 'avatar-border')
       .attr('r', d => selectedNode?.id === d.data.id ? 30 : 25)
-      .style('fill', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
-      .style('stroke', '#475569')
-      .style('stroke-width', 2)
-      .style('cursor', 'pointer')
+      .attr('fill', '#fff')
+      .attr('stroke', '#475569')
+      .attr('stroke-width', 2)
+      .style('opacity', d => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1)
       .style('transition', 'all 0.3s ease')
-      .style('filter', d => selectedNode?.id === d.data.id ? 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.5))' : 'none')
-      .style('opacity', d => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1);
+      .style('filter', d => selectedNode?.id === d.data.id ? 'drop-shadow(0 0 12px #3b82f6)' : 'none');
 
-    // Add text labels
-    nodes.append('text')
-      .attr('dy', 45)
+    // Add images for nodes - Apply circular clipping to ALL nodes
+    nodes.append('image')
+      .attr('class', 'avatar-img')
+      .attr('href', d => d.data.picture_url || getRandomAvatar(d.data.name))
+      .attr('width', d => selectedNode?.id === d.data.id ? 60 : 50)
+      .attr('height', d => selectedNode?.id === d.data.id ? 60 : 50)
+      .attr('x', d => (selectedNode?.id === d.data.id ? -30 : -25))
+      .attr('y', d => (selectedNode?.id === d.data.id ? -30 : -25))
+      .attr('clip-path', d => `url(#clip-${d.data.id})`)
+      .style('cursor', 'pointer')
+      .style('filter', d => selectedNode?.id === d.data.id ? 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.5))' : 'none')
+      .style('opacity', d => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1)
+      .style('transition', 'all 0.3s ease')
+      .on('error', function(event, d) {
+        d3.select(this).attr('href', getRandomAvatar(d.data.name));
+      });
+
+    // Add a group for label background and text
+    const labelGroups = nodes.append('g')
+      .attr('class', 'node-label-group')
+      .attr('transform', 'translate(0, 45)');
+
+    // Add background rect
+    labelGroups.append('rect')
+      .attr('class', 'node-label-bg')
+      .attr('x', function(d) {
+        const text = d.data.name;
+        const len = text.length;
+        return -len * 3.5 - 8; // estimate width, center
+      })
+      .attr('y', -12)
+      .attr('width', function(d) {
+        const text = d.data.name;
+        const len = text.length;
+        return len * 7 + 16; // estimate width
+      })
+      .attr('height', 24)
+      .attr('rx', 12)
+      .attr('fill', '#fff')
+      .attr('stroke', '#cbd5e1')
+      .attr('stroke-width', 1.2)
+      .style('filter', 'drop-shadow(0 1px 2px rgba(0,0,0,0.04))')
+      .style('opacity', d => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1)
+      .style('transition', 'all 0.3s ease');
+
+    // Add text on top of rect
+    labelGroups.append('text')
+      .attr('class', 'node-label-text')
       .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('y', 0)
       .style('font-family', 'Inter, sans-serif')
-      .style('font-size', '12px')
+      .style('font-size', '13px')
       .style('font-weight', d => selectedNode?.id === d.data.id ? '700' : '500')
       .style('fill', '#1e293b')
       .style('pointer-events', 'none')
@@ -214,28 +307,24 @@ export function FamilyTree() {
         // First zoom in on root node
         const rootNode = treeData.descendants()[0];
         const initialX = width / 2 - (rootNode.x + margin.left);
-        const initialY = height / 2 - (rootNode.y + margin.top);
-        
+        const initialY = height / 2 - (rootNode.y + margin.top) - 100;
         if (zoomRef.current) {
           // Calculate the transform to center on root node
           const transform = d3.zoomIdentity
             .translate(width / 2, height / 2)
             .scale(1.5)
             .translate(-(rootNode.x + margin.left), -(rootNode.y + margin.top));
-
           svg.transition()
             .duration(750)
             .call(zoomRef.current.transform, transform);
-
           // Then zoom out to show full tree after a delay
           setTimeout(() => {
-            const centerX = width / 2 - bounds.x - bounds.width / 2;
+            const centerX = width / 2 - bounds.x - bounds.width / 2 + 100;
             const centerY = height / 2 - bounds.y - bounds.height / 2;
-            
             if (zoomRef.current) {
               svg.transition()
                 .duration(1000)
-                .call(zoomRef.current.transform, d3.zoomIdentity.translate(centerX, centerY).scale(0.8));
+                .call(zoomRef.current.transform, d3.zoomIdentity.translate(centerX, centerY).scale(0.65));
             }
           }, 1000);
         }
@@ -289,16 +378,30 @@ export function FamilyTree() {
     if (treeData && svgRef.current) {
       const svg = d3.select(svgRef.current);
       const container = svg.select('.tree-container');
-      
+      const defs = svg.select('defs');
       // Update styles without re-rendering the entire tree
       container.selectAll('.link')
         .style('stroke-opacity', selectedNode ? 0.3 : 0.6);
-
-      container.selectAll<SVGGElement, TreeNode>('.node circle')
-        .attr('r', d => selectedNode?.id === d.data.id ? 30 : 25)
-        .style('filter', d => selectedNode?.id === d.data.id ? 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.5))' : 'none')
-        .style('opacity', d => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1);
-
+      // Update all clipPath radii based on selection
+      defs.selectAll('clipPath').each(function(d: any) {
+        const id = d3.select(this).attr('id');
+        const nodeDatum = treeData.descendants().find(n => `clip-${n.data.id}` === id);
+        d3.select(this).select('circle')
+          .attr('r', nodeDatum && selectedNode?.id === nodeDatum.data.id ? 30 : 25);
+      });
+      // Update all border circles
+      container.selectAll('circle.avatar-border')
+        .attr('r', (d: any) => selectedNode?.id === d.data.id ? 30 : 25)
+        .style('opacity', (d: any) => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1)
+        .style('filter', (d: any) => selectedNode?.id === d.data.id ? 'drop-shadow(0 0 12px #3b82f6)' : 'none');
+      // Update all images
+      container.selectAll('image.avatar-img')
+        .attr('width', (d: any) => selectedNode?.id === d.data.id ? 60 : 50)
+        .attr('height', (d: any) => selectedNode?.id === d.data.id ? 60 : 50)
+        .attr('x', (d: any) => (selectedNode?.id === d.data.id ? -30 : -25))
+        .attr('y', (d: any) => (selectedNode?.id === d.data.id ? -30 : -25))
+        .style('filter', (d: any) => selectedNode?.id === d.data.id ? 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.5))' : 'none')
+        .style('opacity', (d: any) => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1);
       container.selectAll<SVGTextElement, TreeNode>('.node text')
         .style('font-weight', d => selectedNode?.id === d.data.id ? '700' : '500')
         .style('opacity', d => selectedNode && selectedNode.id !== d.data.id ? 0.3 : 1);
@@ -338,13 +441,7 @@ export function FamilyTree() {
 
   return (
     <div
-      className="min-h-screen p-6"
-      style={{
-        backgroundColor: '#fff',
-        backgroundImage: 'radial-gradient(circle, #e5e7eb 1.5px, transparent 1.5px)',
-        backgroundSize: '32px 32px',
-        backgroundPosition: '0 0',
-      }}
+      className="min-h-screen p-6 bg-white"
     >
       <div className="max-w-7xl mx-auto">
         {/* Tree Visualization */}
@@ -366,7 +463,7 @@ export function FamilyTree() {
           {/* Controls */}
           <div className="absolute top-4 left-0 right-0 flex justify-center gap-4">
             {/* Family Selector */}
-            <div className="shadow-lg">
+            <div className="border border-blue-500 rounded-lg transition-all duration-200 hover:border-blue-600 focus-within:border-blue-600 focus-within:shadow-[0_0_12px_2px_rgba(59,130,246,0.25)]">
               <Select value={selectedFamily} onValueChange={handleFamilyChange}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Choose a family" />
@@ -384,7 +481,7 @@ export function FamilyTree() {
 
           {/* Navigation instructions - vertically centered on left edge */}
           <div
-            className="absolute text-sm text-slate-600 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg"
+            className="absolute text-sm text-slate-600 bg-white/90 backdrop-blur-sm rounded-lg p-3 border border-blue-500"
             style={{
               top: '50%',
               left: '2rem',
