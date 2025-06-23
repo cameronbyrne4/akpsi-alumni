@@ -75,6 +75,9 @@ export default function Home() {
   const manualFilterRef = useRef<HTMLDivElement>(null);
   const alumniListRef = useRef<HTMLDivElement>(null);
 
+  // Track if search is active for background paths
+  const isSearchActive = hasSearched || manualSearchMode;
+
   const totalPages = totalCount ? Math.ceil(totalCount / PAGE_SIZE) : 1;
 
   // If ?manual=1 is present, activate manual search mode
@@ -430,7 +433,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background flex flex-col relative">
-      <BackgroundPaths />
+      <BackgroundPaths isSearchActive={isSearchActive} />
       <div className={hasSearched || manualSearchMode ? "container mx-auto px-4 py-16 relative z-10" : "flex flex-1 flex-col items-center justify-center relative z-10"}>
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2">
@@ -505,7 +508,7 @@ export default function Home() {
                 onClick={() => setShowPromptPopover(false)}
                 aria-label="Close example prompts popup"
               />
-              {/* Centered popup */}
+              {/* Centered popup relative to viewport */}
               <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md rounded-lg bg-white shadow-2xl border border-gray-200 p-6 flex flex-col gap-3">
                 <button
                   className="absolute top-2 right-2 p-1 rounded hover:bg-muted"

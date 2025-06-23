@@ -18,7 +18,7 @@ function FloatingPaths({ position }: { position: number }) {
 
   return (
     <div className="absolute inset-0 pointer-events-none">
-      <svg className="w-full h-full text-slate-950 dark:text-white" viewBox="0 0 696 316" fill="none">
+      <svg className="w-full h-full text-blue-500" viewBox="0 0 696 316" fill="none">
         <title>Background Paths</title>
         {paths.map((path) => (
           <motion.path
@@ -45,11 +45,20 @@ function FloatingPaths({ position }: { position: number }) {
   )
 }
 
-export function BackgroundPaths() {
+interface BackgroundPathsProps {
+  isSearchActive?: boolean;
+}
+
+export function BackgroundPaths({ isSearchActive = false }: BackgroundPathsProps) {
   return (
-    <div className="absolute inset-0">
+    <motion.div 
+      className="fixed inset-0 pointer-events-none"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: isSearchActive ? 0 : 1 }}
+      transition={{ duration: 1.5, ease: "easeInOut" }}
+    >
       <FloatingPaths position={1} />
       <FloatingPaths position={-1} />
-    </div>
+    </motion.div>
   )
 } 

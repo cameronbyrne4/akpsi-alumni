@@ -8,6 +8,19 @@ import { formatLocation, getRandomAvatar } from '@/lib/utils'
 import Image from 'next/image'
 import { getCompanyColor } from '@/lib/company-colors'
 
+// Pastel color mapping for family branches
+const familyColors: Record<string, { bg: string; text: string; border: string }> = {
+  Paahana: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-800' },
+  Magpantay: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-800' },
+  Brecek: { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-800' },
+  Brugos: { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-800' },
+  Cauntay: { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-800' },
+  Johnson: { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-800' },
+  Chou: { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-800' },
+  Heller: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-800' },
+  Li: { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-800' },
+};
+
 function CompanyBadge({ company }: { company: string }) {
   const { bg, text } = getCompanyColor(company)
 
@@ -207,12 +220,12 @@ export function AlumniCard({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Card className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-white to-gray-50/50 card-glow flex flex-col h-full">
+        <Card className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 border-0 bg-white hover:card-glow flex flex-col h-full">
           {/* New header section */}
           <div className="relative">
             {/* Banner */}
-            <div className="h-16 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            <div className="h-16 bg-gradient-to-r from-blue-200 to-white">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-white" />
             </div>
             
             {/* Avatar */}
@@ -241,9 +254,13 @@ export function AlumniCard({
             {/* Family Branch Badge */}
             {familyBranch && (
               <div className="absolute top-3 right-3">
-                <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
+                <span
+                  className={`text-xs px-2 py-1 rounded font-semibold shadow-sm border ${
+                    familyColors[familyBranch]?.border || 'border-gray-400'
+                  } ${familyColors[familyBranch]?.bg || 'bg-gray-100'} ${familyColors[familyBranch]?.text || 'text-gray-700'}`}
+                >
                   {familyBranch}
-                </Badge>
+                </span>
               </div>
             )}
           </div>
@@ -462,12 +479,12 @@ export function AlumniCardContent({
   const bestEducation = getBestEducation();
 
   return (
-    <Card className="group relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-white to-gray-50/50 card-glow flex flex-col h-full">
+    <Card className="group relative overflow-hidden border-0 shadow-md bg-white hover:card-glow flex flex-col h-full">
       {/* New header section */}
       <div className="relative">
         {/* Banner */}
-        <div className="h-16 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+        <div className="h-16 bg-gradient-to-r from-blue-200 to-white">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-white" />
         </div>
         
         {/* Avatar */}
@@ -496,9 +513,13 @@ export function AlumniCardContent({
         {/* Family Branch Badge */}
         {familyBranch && showFamilyBranch && (
           <div className="absolute top-3 right-3">
-            <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
+            <span
+              className={`text-xs px-2 py-1 rounded font-semibold shadow-sm border ${
+                familyColors[familyBranch]?.border || 'border-gray-400'
+              } ${familyColors[familyBranch]?.bg || 'bg-gray-100'} ${familyColors[familyBranch]?.text || 'text-gray-700'}`}
+            >
               {familyBranch}
-            </Badge>
+            </span>
           </div>
         )}
       </div>

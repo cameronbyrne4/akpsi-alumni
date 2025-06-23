@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Menu, X } from 'lucide-react'
+import { PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { useUserData } from '@/hooks/useUserData'
@@ -58,28 +58,27 @@ export function SideNav({
       {/* Hamburger icon */}
       {!open && (
         <button
-          className="fixed top-4 left-4 z-50 p-2 rounded-full bg-secondary hover:bg-secondary/80 transition"
+          className="fixed top-4 left-4 z-50 p-2 rounded-full bg-blue-100/80 text-slate-800 border border-blue-200/80 hover:bg-blue-200/60 transition"
           onClick={onOpen}
           aria-label="Open navigation"
         >
-          <Menu className="h-6 w-6" />
+          <PanelLeftOpen className="h-6 w-6" />
         </button>
       )}
       {/* Side nav */}
       <nav
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-secondary/50 transform transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-blue-100/80 backdrop-blur-lg border-r border-blue-200/80 transform transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : '-translate-x-full'}`}
         aria-label="Sidebar"
       >
-        <div className="flex items-center justify-between px-4 py-4 border-b border-border/50">
-          <span className="font-bold text-lg">Menu</span>
-          <button onClick={onClose} aria-label="Close navigation" className="p-1 rounded hover:bg-secondary/80">
-            <X className="h-5 w-5" />
+        <div className="flex items-center justify-end px-4 py-4 border-b border-blue-200/80">
+          <button onClick={onClose} aria-label="Close navigation" className="p-1 rounded text-slate-800 hover:bg-blue-200/60">
+            <PanelLeftClose className="h-5 w-5" />
           </button>
         </div>
-        <ul className="flex flex-col gap-2 p-4">
+        <ul className="flex flex-col gap-2 p-4 text-slate-800">
           <li>
             <button
-              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/' ? 'bg-blue-200 font-semibold' : 'hover:bg-blue-200/60'}`}
               onClick={() => { onManualSearch(); }}
             >
               Alumni Search
@@ -87,7 +86,7 @@ export function SideNav({
           </li>
           <li>
             <button
-              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/family-tree' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+              className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/family-tree' ? 'bg-blue-200 font-semibold' : 'hover:bg-blue-200/60'}`}
               onClick={() => { onFamilyTrees(); }}
             >
               Family Trees
@@ -97,7 +96,7 @@ export function SideNav({
             <>
               <li>
                 <button
-                  className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/update-alumni' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+                  className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/update-alumni' ? 'bg-blue-200 font-semibold' : 'hover:bg-blue-200/60'}`}
                   onClick={handleUpdateAlumni}
                 >
                   Update Alumni
@@ -105,7 +104,7 @@ export function SideNav({
               </li>
               <li>
                 <button
-                  className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/admin/family-tree' ? 'bg-primary/10 font-semibold' : 'hover:bg-secondary/80'}`}
+                  className={`w-full text-left px-3 py-2 rounded transition ${pathname === '/admin/family-tree' ? 'bg-blue-200 font-semibold' : 'hover:bg-blue-200/60'}`}
                   onClick={() => router.push('/admin/family-tree')}
                 >
                   Manage Family Trees
@@ -114,16 +113,16 @@ export function SideNav({
             </>
           )}
         </ul>
-        <div className="border-t border-border/50 px-4 pt-4">
-          <div className="font-semibold text-sm mb-2 text-muted-foreground">Previous Searches</div>
-          <ul className="flex flex-col gap-1">
+        <div className="border-t border-blue-200/80 px-4 pt-4">
+          <div className="font-semibold text-sm mb-2 text-slate-600">Previous Searches</div>
+          <ul className="flex flex-col gap-1 text-slate-800">
             {previousSearches.length === 0 && (
-              <li className="text-xs text-muted-foreground">No previous searches</li>
+              <li className="text-xs text-slate-500">No previous searches</li>
             )}
             {previousSearches.map((searchData, idx) => (
               <li key={idx}>
                 <button
-                  className="w-full text-left px-2 py-1 rounded hover:bg-secondary/80 text-sm truncate"
+                  className="w-full text-left px-2 py-1 rounded hover:bg-blue-200/60 text-sm truncate"
                   onClick={() => { onSelectPrevious(searchData); }}
                   title={searchData.query}
                 >

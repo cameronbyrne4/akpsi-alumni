@@ -10,6 +10,7 @@ interface AiSearchBarProps {
 
 export function AiSearchBar({ onSubmit, value, onChange, isLoading }: AiSearchBarProps) {
   const [input, setInput] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
   const isControlled = value !== undefined && onChange !== undefined
   const inputValue = isControlled ? value : input
   const setInputValue = isControlled ? onChange : setInput
@@ -23,11 +24,15 @@ export function AiSearchBar({ onSubmit, value, onChange, isLoading }: AiSearchBa
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center w-full mb-8">
-      <div className="w-full max-w-2xl flex items-center rounded-2xl border bg-white shadow px-6 py-4">
+      <div className={`w-full max-w-2xl flex items-center rounded-2xl border bg-white shadow px-6 py-4 transition-all duration-300 ${
+        isFocused ? 'blue-glow' : ''
+      }`}>
         <input
           type="text"
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder="Search for people who…"
           className={`flex-1 bg-transparent outline-none text-lg placeholder:text-gray-400 ${
             isLoading ? 'animate-shimmer' : ''
