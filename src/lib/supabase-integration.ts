@@ -1,5 +1,5 @@
 // Supabase Integration for LinkedIn Scraper
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 import { Alumni, CareerExperience } from './linkedin-scraper';
 import * as dotenv from 'dotenv';
 import path from 'path';
@@ -7,19 +7,6 @@ import path from 'path';
 // Load environment variables from root directory
 const rootDir = path.resolve(__dirname, '../../');
 dotenv.config({ path: path.join(rootDir, '.env.local') });
-
-// Try both prefixed and non-prefixed versions
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Current working directory:', process.cwd());
-  console.error('Looking for .env.local in:', path.join(rootDir, '.env.local'));
-  console.error('Available env vars:', Object.keys(process.env));
-  throw new Error('Missing Supabase environment variables. Please check your .env.local file for either NEXT_PUBLIC_SUPABASE_URL/KEY or SUPABASE_URL/KEY.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Enhanced Alumni type with better career_history structure
 export type EnhancedAlumni = Omit<Alumni, 'career_history'> & {

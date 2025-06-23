@@ -3,6 +3,8 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, GraduationCap, Building2, Mail, Phone, ExternalLink } from 'lucide-react'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { AlumniProfileDialog } from '@/components/ui/alumni-profile-dialog'
+import { ContactIcons } from '@/components/ui/contact-icons'
+import { formatLocation } from '@/lib/utils'
 
 interface CareerExperience {
   title: string;
@@ -192,7 +194,7 @@ export function AlumniCard({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Card className="group relative overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-md bg-gradient-to-br from-white to-gray-50/50">
+        <Card className="group relative overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-white to-gray-50/50 card-glow flex flex-col h-full">
           {/* Header with gradient background */}
           <div className="relative h-32 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
@@ -224,8 +226,8 @@ export function AlumniCard({
           </div>
 
           {/* Content */}
-          <CardContent className="p-6 pt-4">
-            <div className="space-y-4">
+          <CardContent className="p-6 pt-4 flex flex-col h-full">
+            <div className="space-y-4 flex-grow">
               {/* Companies */}
               {bestCompanies && bestCompanies.length > 0 && (
                 <div className="space-y-2">
@@ -249,13 +251,7 @@ export function AlumniCard({
               )}
 
               {/* Location and graduation */}
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                {location && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="truncate">{location}</span>
-                  </div>
-                )}
+              <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                 {graduationYear && (
                   <div className="flex items-center gap-1.5">
                     <GraduationCap className="h-3.5 w-3.5 text-gray-400" />
@@ -263,38 +259,31 @@ export function AlumniCard({
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Contact indicators */}
-              <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-                {email && email.length > 0 && (
-                  <div className="flex items-center gap-1 text-xs text-green-600">
-                    <Mail className="h-3 w-3" />
-                    <span>Email</span>
-                  </div>
-                )}
-                {phone && phone.length > 0 && (
-                  <div className="flex items-center gap-1 text-xs text-blue-600">
-                    <Phone className="h-3 w-3" />
-                    <span>Phone</span>
-                  </div>
-                )}
-                {linkedinUrl && (
-                  <div className="flex items-center gap-1 text-xs text-blue-700">
-                    <ExternalLink className="h-3 w-3" />
-                    <span>LinkedIn</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Family branch indicator */}
-              {familyBranch && (
-                <div className="absolute top-3 right-3">
-                  <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
-                    {familyBranch}
-                  </Badge>
+            {/* Bottom line: Contact icons on left, location on right - NOW STICKY TO BOTTOM */}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-auto">
+              <ContactIcons 
+                hasEmail={!!email && email.length > 0}
+                hasPhone={!!phone && phone.length > 0}
+                hasLinkedin={!!linkedinUrl}
+              />
+              {location && (
+                <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0 max-w-48">
+                  <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="truncate" title={location}>{formatLocation(location)}</span>
                 </div>
               )}
             </div>
+
+            {/* Family branch indicator */}
+            {familyBranch && (
+              <div className="absolute top-3 right-3">
+                <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
+                  {familyBranch}
+                </Badge>
+              </div>
+            )}
           </CardContent>
         </Card>
       </DialogTrigger>
@@ -459,7 +448,7 @@ export function AlumniCardContent({
   const bestEducation = getBestEducation();
 
   return (
-    <Card className="group relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-white to-gray-50/50">
+    <Card className="group relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-white to-gray-50/50 card-glow flex flex-col h-full">
       {/* Header with gradient background */}
       <div className="relative h-32 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
@@ -491,8 +480,8 @@ export function AlumniCardContent({
       </div>
 
       {/* Content */}
-      <CardContent className="p-6 pt-4">
-        <div className="space-y-4">
+      <CardContent className="p-6 pt-4 flex flex-col h-full">
+        <div className="space-y-4 flex-grow">
           {/* Companies */}
           {bestCompanies && bestCompanies.length > 0 && (
             <div className="space-y-2">
@@ -516,13 +505,7 @@ export function AlumniCardContent({
           )}
 
           {/* Location and graduation */}
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            {location && (
-              <div className="flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                <span className="truncate">{location}</span>
-              </div>
-            )}
+          <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
             {graduationYear && (
               <div className="flex items-center gap-1.5">
                 <GraduationCap className="h-3.5 w-3.5 text-gray-400" />
@@ -530,38 +513,31 @@ export function AlumniCardContent({
               </div>
             )}
           </div>
+        </div>
 
-          {/* Contact indicators */}
-          <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-            {email && email.length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-green-600">
-                <Mail className="h-3 w-3" />
-                <span>Email</span>
-              </div>
-            )}
-            {phone && phone.length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-blue-600">
-                <Phone className="h-3 w-3" />
-                <span>Phone</span>
-              </div>
-            )}
-            {linkedinUrl && (
-              <div className="flex items-center gap-1 text-xs text-blue-700">
-                <ExternalLink className="h-3 w-3" />
-                <span>LinkedIn</span>
-              </div>
-            )}
-          </div>
-
-          {/* Family branch indicator */}
-          {familyBranch && showFamilyBranch && (
-            <div className="absolute top-3 right-3">
-              <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
-                {familyBranch}
-              </Badge>
+        {/* Bottom line: Contact icons on left, location on right - NOW STICKY TO BOTTOM */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-auto">
+          <ContactIcons 
+            hasEmail={!!email && email.length > 0}
+            hasPhone={!!phone && phone.length > 0}
+            hasLinkedin={!!linkedinUrl}
+          />
+          {location && (
+            <div className="flex items-center gap-1.5 text-sm text-gray-600 min-w-0 max-w-48">
+              <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+              <span className="truncate" title={location}>{formatLocation(location)}</span>
             </div>
           )}
         </div>
+
+        {/* Family branch indicator */}
+        {familyBranch && showFamilyBranch && (
+          <div className="absolute top-3 right-3">
+            <Badge variant="outline" className="text-xs px-2 py-1 bg-white/80 backdrop-blur-sm border-primary/20 text-primary">
+              {familyBranch}
+            </Badge>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

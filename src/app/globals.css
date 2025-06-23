@@ -81,4 +81,25 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  .blue-glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .blue-glow:hover {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.7);
+  }
+
+  .card-glow {
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .card-glow:hover {
+    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.25);
+    transform: translateY(-2px);
+  }
 }

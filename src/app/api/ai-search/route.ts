@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const currentYear = new Date().getFullYear()
   const prompt = `You are a search query parser for an alumni database. Extract search criteria from the user's query and return a JSON object with the following fields:
 - role: array of strings or null (e.g., ["Software Engineer", "Senior Software Engineer", "Lead Software Engineer"])
-- location: array of strings (e.g., ["San Francisco, CA", "New York, NY"])
+- location: array of strings (e.g., ["San Francisco", "New York"]) - return city names only, not full locations
 - graduation_year_min: number or null (e.g., 2015)
 - graduation_year_max: number or null (e.g., ${currentYear})
 - family_branch: string or null (e.g., "Lambda", "Gamma")
@@ -70,15 +70,16 @@ Important role handling rules:
 14. For research roles, include: Researcher, Research Scientist, Data Scientist, Research Analyst, Research Manager, Senior Researcher, Principal Researcher
 
 Important location handling rules:
-1. Always return city-level locations with state (e.g., "San Francisco, CA")
+1. Always return city names only (e.g., "San Francisco", "New York", "Los Angeles")
 2. If a state is mentioned (e.g., "California"), return all major cities in that state
 3. If a region is mentioned (e.g., "Bay Area"), return all cities in that region
-4. If a city is mentioned without state, add the state (e.g., "San Francisco" → "San Francisco, CA")
+4. If a city is mentioned without state, just return the city name
+5. For metropolitan areas, return the main city name (e.g., "San Francisco Bay Area" → "San Francisco")
 
 Example input: "find software engineers in California who graduated after 2015"
 Example output: {
   "role": ["Software Engineer", "Senior Software Engineer", "Lead Software Engineer", "Principal Software Engineer", "Staff Software Engineer"],
-  "location": ["San Francisco, CA", "Los Angeles, CA", "San Diego, CA", "San Jose, CA", "Oakland, CA", "Cupertino, CA", "Sunnyvale, CA", "Sacramento, CA"],
+  "location": ["San Francisco", "Los Angeles", "San Diego", "San Jose", "Oakland", "Cupertino", "Sunnyvale", "Sacramento"],
   "graduation_year_min": 2015,
   "graduation_year_max": null,
   "family_branch": null,
@@ -88,7 +89,7 @@ Example output: {
 Example input: "people in consulting in San Francisco"
 Example output: {
   "role": ["Consultant", "Senior Consultant", "Lead Consultant", "Principal Consultant", "Managing Consultant", "Strategy Consultant", "Management Consultant", "Business Consultant", "Technology Consultant", "Implementation Consultant"],
-  "location": ["San Francisco, CA"],
+  "location": ["San Francisco"],
   "graduation_year_min": null,
   "graduation_year_max": null,
   "family_branch": null,
@@ -98,7 +99,7 @@ Example output: {
 Example input: "finance professionals in New York"
 Example output: {
   "role": ["Financial Analyst", "Investment Banker", "Portfolio Manager", "Risk Analyst", "Credit Analyst", "Financial Advisor", "Investment Advisor", "Wealth Manager", "Financial Consultant", "Banking Associate", "Banking Analyst"],
-  "location": ["New York, NY"],
+  "location": ["New York"],
   "graduation_year_min": null,
   "graduation_year_max": null,
   "family_branch": null,
@@ -108,7 +109,7 @@ Example output: {
 Example input: "tech workers in San Francisco and Los Angeles"
 Example output: {
   "role": null,
-  "location": ["San Francisco, CA", "Los Angeles, CA"],
+  "location": ["San Francisco", "Los Angeles"],
   "graduation_year_min": null,
   "graduation_year_max": null,
   "family_branch": null,
@@ -128,7 +129,7 @@ Example output: {
 Example input: "Big 3 consultants in New York"
 Example output: {
   "role": ["Consultant", "Senior Consultant", "Lead Consultant", "Principal Consultant", "Managing Consultant", "Strategy Consultant", "Management Consultant", "Business Consultant", "Technology Consultant", "Implementation Consultant"],
-  "location": ["New York, NY"],
+  "location": ["New York"],
   "graduation_year_min": null,
   "graduation_year_max": null,
   "family_branch": null,

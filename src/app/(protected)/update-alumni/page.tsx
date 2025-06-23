@@ -349,7 +349,31 @@ export default function UpdateAlumniPage() {
   const [loading, setLoading] = useState(false);
   const [alumni, setAlumni] = useState<Alumni | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<Alumni>({
+    id: '',
+    name: '',
+    role: '',
+    companies: [] as string[],
+    location: '',
+    family_branch: '',
+    graduation_year: undefined,
+    big_brother: '',
+    little_brothers: [] as string[],
+    linkedin_url: '',
+    picture_url: '',
+    bio: '',
+    emails: [] as string[],
+    phones: [] as string[],
+    majors: [] as string[],
+    minors: [] as string[],
+    career_history: [] as any[],
+    education: [] as any[],
+    has_linkedin: false,
+    scraped: false,
+    manually_verified: false,
+    has_enrichment: false,
+    source_sheet: [] as string[],
+  });
   const [bigBrotherError, setBigBrotherError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -359,7 +383,6 @@ export default function UpdateAlumniPage() {
     name: '',
     role: '',
     companies: [] as string[],
-    industry: [] as string[],
     location: '',
     family_branch: '',
     graduation_year: undefined,
@@ -493,7 +516,6 @@ export default function UpdateAlumniPage() {
           // Use the modified education history
           education: educationHistory, 
           companies: (data.companies || []).join(', '),
-          industry: (data.industry || []).join(', '),
           little_brothers: (data.little_brothers || []).join(', '),
           emails: (data.emails || []).join(', '),
           phones: (data.phones || []).join(', '),
@@ -622,7 +644,6 @@ export default function UpdateAlumniPage() {
         name: formData.name || alumni.name,
         role: formData.role || alumni.role,
         companies: convertToArray(formData.companies),
-        industry: convertToArray(formData.industry),
         family_branch: formData.family_branch || alumni.family_branch,
         graduation_year: formData.graduation_year || alumni.graduation_year,
         location: formData.location || alumni.location,
@@ -633,8 +654,6 @@ export default function UpdateAlumniPage() {
         bio: formData.bio || alumni.bio,
         emails: convertToArray(formData.emails),
         phones: convertToArray(formData.phones),
-        majors: convertToArray(formData.majors),
-        minors: convertToArray(formData.minors),
         career_history: formData.career_history || alumni.career_history,
         education: formData.education || alumni.education,
         source_sheet: convertToArray(formData.source_sheet),
@@ -667,7 +686,6 @@ export default function UpdateAlumniPage() {
         setFormData({
             ...data,
             companies: (data.companies || []).join(', '),
-            industry: (data.industry || []).join(', '),
             little_brothers: (data.little_brothers || []).join(', '),
             emails: (data.emails || []).join(', '),
             phones: (data.phones || []).join(', '),
@@ -709,7 +727,31 @@ export default function UpdateAlumniPage() {
 
       // Reset the form
       setAlumni(null);
-      setFormData({});
+      setFormData({
+        id: '',
+        name: '',
+        role: '',
+        companies: [] as string[],
+        location: '',
+        family_branch: '',
+        graduation_year: undefined,
+        big_brother: '',
+        little_brothers: [] as string[],
+        linkedin_url: '',
+        picture_url: '',
+        bio: '',
+        emails: [] as string[],
+        phones: [] as string[],
+        majors: [] as string[],
+        minors: [] as string[],
+        career_history: [] as any[],
+        education: [] as any[],
+        has_linkedin: false,
+        scraped: false,
+        manually_verified: false,
+        has_enrichment: false,
+        source_sheet: [] as string[],
+      });
       setSearchQuery('');
       setShowDeleteDialog(false);
     } catch (error) {
@@ -741,7 +783,6 @@ export default function UpdateAlumniPage() {
         name: newAlumniData.name,
         role: newAlumniData.role || '',
         companies: newAlumniData.companies || [] as string[],
-        industry: newAlumniData.industry || [] as string[],
         location: newAlumniData.location || '',
         family_branch: newAlumniData.family_branch || '',
         graduation_year: newAlumniData.graduation_year,
@@ -791,7 +832,6 @@ export default function UpdateAlumniPage() {
         name: '',
         role: '',
         companies: [] as string[],
-        industry: [] as string[],
         location: '',
         family_branch: '',
         graduation_year: undefined,
@@ -959,7 +999,6 @@ export default function UpdateAlumniPage() {
                       name: searchQuery,
                       role: '',
                       companies: [] as string[],
-                      industry: [] as string[],
                       location: '',
                       family_branch: '',
                       graduation_year: undefined,
@@ -1055,7 +1094,6 @@ export default function UpdateAlumniPage() {
                       name: '',
                       role: '',
                       companies: [] as string[],
-                      industry: [] as string[],
                       location: '',
                       family_branch: '',
                       graduation_year: undefined,
@@ -1121,20 +1159,6 @@ export default function UpdateAlumniPage() {
                     {nameError && (
                       <p className="text-sm text-red-500">{nameError}</p>
                     )}
-                  </div>
-                </div>
-
-                {/* Industry */}
-                <div className="space-y-2">
-                  <Label htmlFor="industry">Industry</Label>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Current: {alumni.industry?.join(', ') || 'Not set'}</p>
-                    <Input
-                      id="industry"
-                      value={formData.industry || ''}
-                      onChange={(e) => handleInputChange('industry', e.target.value)}
-                      placeholder="Ex. Technology"
-                    />
                   </div>
                 </div>
 
@@ -1421,7 +1445,6 @@ export default function UpdateAlumniPage() {
                      setFormData({
                        ...alumni,
                        companies: (alumni.companies || []).join(', '),
-                       industry: (alumni.industry || []).join(', '),
                        little_brothers: (alumni.little_brothers || []).join(', '),
                        emails: (alumni.emails || []).join(', '),
                        phones: (alumni.phones || []).join(', '),

@@ -14,6 +14,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Button } from '@/components/ui/button'
 import { BackgroundPaths } from '@/components/ui/background-paths'
 import { motion, AnimatePresence } from 'framer-motion'
+import { matchesCityFilter } from '@/lib/utils'
 import {
   Pagination,
   PaginationContent,
@@ -49,6 +50,9 @@ export default function Home() {
     graduationYear: undefined as [number, number] | undefined,
     hasCompleteProfile: false,
   })
+  // Cache for client-side filtered results
+  const [filteredCache, setFilteredCache] = useState<Alumni[]>([])
+  const [lastFilterHash, setLastFilterHash] = useState<string>('')
   const {
     manualSearchMode,
     setManualSearchMode,
@@ -97,6 +101,7 @@ export default function Home() {
 
   // Helper to build Supabase filter query
   const buildQuery = () => {
+    console.log('🔍 Building query with:', { searchQuery, filters })
     let q = supabase.from('alumni').select('*', { count: 'exact' })
     
     // Has professional info - must be first filter
@@ -116,85 +121,128 @@ export default function Home() {
         .not('career_history', 'eq', '{"bio":null,"experiences":[],"picture_url":null}')
     }
 
-    // Search - now includes career_history for enriched/scraped profiles
+    // Search - simple text search
     if (searchQuery) {
-      q = q.or(
-        // Basic columns
-        `name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%,companies.cs.{${searchQuery}}` +
-        // Career history for enriched profiles (search all array elements)
-        `,jsonb_path_query_array(career_history, '$[*].title')::text.ilike.%${searchQuery}%,jsonb_path_query_array(career_history, '$[*].company_name')::text.ilike.%${searchQuery}%` +
-        // Career history for scraped profiles (experiences array)
-        `,jsonb_path_query_array(career_history, '$[*].experiences[*].position')::text.ilike.%${searchQuery}%,jsonb_path_query_array(career_history, '$[*].experiences[*].company')::text.ilike.%${searchQuery}%`
-      )
+      console.log('🔍 Adding search query:', searchQuery)
+      q = q.or(`name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%`)
     }
     
-    // Company - search both basic companies array and career_history
+    // Company - simple contains search
     if (filters.company.length > 0) {
-      const companyConditions = filters.company.map(company => 
-        // Basic companies column
-        `companies.ilike.%${company}%` +
-        // Career history for enriched profiles (search all array elements)
-        `,jsonb_path_query_array(career_history, '$[*].company_name')::text.ilike.%${company}%` +
-        // Career history for scraped profiles
-        `,jsonb_path_query_array(career_history, '$[*].experiences[*].company')::text.ilike.%${company}%`
-      ).join(',')
-      console.log('🔍 Company filter conditions:', companyConditions)
-      q = q.or(companyConditions)
+      console.log('🔍 Adding company filters:', filters.company)
+      // Use the first company for now - we can improve this later
+      q = q.contains('companies', [filters.company[0]])
     }
     
-    // Role - search both basic role column and career_history
+    // Role - simple text search
     if (filters.role.length > 0) {
-      const roleConditions = filters.role.map(role => 
-        // Basic role column
-        `role.ilike.%${role}%` +
-        // Career history for enriched profiles (search all array elements)
-        `,jsonb_path_query_array(career_history, '$[*].title')::text.ilike.%${role}%` +
-        // Career history for scraped profiles
-        `,jsonb_path_query_array(career_history, '$[*].experiences[*].position')::text.ilike.%${role}%`
-      ).join(',')
-      console.log('👔 Role filter conditions:', roleConditions)
-      q = q.or(roleConditions)
+      console.log('🔍 Adding role filters:', filters.role)
+      // Use the first role for now - we can improve this later
+      q = q.ilike('role', `%${filters.role[0]}%`)
     }
     
-    // City - search both basic location column and career_history
-    if (filters.city.length > 0) {
-      const cityConditions = filters.city.map(city => 
-        // Basic location column
-        `location.ilike.%${city}%` +
-        // Career history for enriched profiles (search all array elements)
-        `,jsonb_path_query_array(career_history, '$[*].location')::text.ilike.%${city}%` +
-        // Career history for scraped profiles
-        `,jsonb_path_query_array(career_history, '$[*].experiences[*].location')::text.ilike.%${city}%`
-      ).join(',')
-      console.log('🌍 City filter conditions:', cityConditions)
-      q = q.or(cityConditions)
-    }
+    // Note: City filtering will be done client-side after fetching data
+    // since we need to use the matchesCityFilter function
     
     // Graduation year
     if (filters.graduationYear) {
+      console.log('🔍 Adding graduation year filter:', filters.graduationYear)
       const [minYear, maxYear] = filters.graduationYear
       q = q.gte('graduation_year', minYear).lte('graduation_year', maxYear)
     }
+    
+    console.log('🔍 Final query built')
     return q
   }
 
   const fetchAlumni = async (pageNum: number, reset = false) => {
+    console.log('🚀 fetchAlumni called with:', { pageNum, reset })
     setLoading(true)
+    
+    // If we have city filters, we need to fetch all data and filter client-side
+    // because Supabase can't handle our complex city matching logic
+    const needsClientSideFiltering = filters.city.length > 0;
+    
+    // Create a hash of current filters to check if we need to refetch
+    const currentFilterHash = JSON.stringify({
+      searchQuery,
+      company: filters.company,
+      role: filters.role,
+      graduationYear: filters.graduationYear,
+      hasCompleteProfile: filters.hasCompleteProfile,
+      city: filters.city
+    });
+    
+    // If we have city filters and the cache is valid, use it
+    if (needsClientSideFiltering && !reset && lastFilterHash === currentFilterHash && filteredCache.length > 0) {
+      console.log('🔍 Using cached filtered results')
+      const startIndex = pageNum * PAGE_SIZE;
+      const endIndex = startIndex + PAGE_SIZE;
+      const pageData = filteredCache.slice(startIndex, endIndex);
+      
+      setAlumni(pageData);
+      setTotalCount(filteredCache.length);
+      setHasMore((pageNum + 1) * PAGE_SIZE < filteredCache.length);
+      setLoading(false);
+      return;
+    }
+    
     let q = buildQuery()
-    q = q.order('created_at', { ascending: false })
-      .range(pageNum * PAGE_SIZE, pageNum * PAGE_SIZE + PAGE_SIZE - 1)
+    
+    if (needsClientSideFiltering) {
+      // Fetch all data for client-side filtering
+      q = q.order('created_at', { ascending: false })
+    } else {
+      // Use normal pagination for other filters
+      q = q.order('created_at', { ascending: false })
+        .range(pageNum * PAGE_SIZE, pageNum * PAGE_SIZE + PAGE_SIZE - 1)
+    }
     
     try {
+      console.log('📡 Executing Supabase query...')
       const { data, error, count } = await q
+      console.log('📡 Query result:', { dataLength: data?.length, error, count })
+      
       if (error) {
-        console.error('Error fetching alumni:', error)
+        console.error('❌ Error fetching alumni:', error)
         setLoading(false)
         return
       }
 
+      // Apply city filtering client-side if needed
+      let filteredData = data || [];
+      if (needsClientSideFiltering) {
+        console.log('🔍 Applying city filters client-side:', filters.city)
+        filteredData = filteredData.filter(alum => {
+          const matches = filters.city.some(city => {
+            const isMatch = matchesCityFilter(alum.location, city);
+            if (isMatch) {
+              console.log(`✅ Match: "${alum.location}" matches city filter "${city}"`);
+            }
+            return isMatch;
+          });
+          return matches;
+        });
+        console.log('🔍 After city filtering:', filteredData.length, 'results')
+        
+        // Cache the filtered results
+        setFilteredCache(filteredData);
+        setLastFilterHash(currentFilterHash);
+        
+        // Apply client-side pagination
+        const startIndex = pageNum * PAGE_SIZE;
+        const endIndex = startIndex + PAGE_SIZE;
+        filteredData = filteredData.slice(startIndex, endIndex);
+        console.log('🔍 After pagination:', filteredData.length, 'results for page', pageNum)
+      } else {
+        // Clear cache when not using client-side filtering
+        setFilteredCache([]);
+        setLastFilterHash('');
+      }
+
       // Debug: Check for duplicate IDs
-      if (data) {
-        const ids = data.map(alum => alum.id)
+      if (filteredData) {
+        const ids = filteredData.map(alum => alum.id)
         const uniqueIds = new Set(ids)
         if (ids.length !== uniqueIds.size) {
           console.warn('Found duplicate IDs in alumni data:', 
@@ -203,21 +251,34 @@ export default function Home() {
         }
       }
 
-      console.log('Fetched alumni data:', data)
+      console.log('✅ Fetched alumni data:', filteredData)
       if (reset) {
-        setAlumni(data || [])
+        setAlumni(filteredData)
       } else {
         // Ensure we don't add duplicates when appending
         setAlumni(prev => {
           const existingIds = new Set(prev.map(a => a.id))
-          const newAlumni = (data || []).filter(a => !existingIds.has(a.id))
+          const newAlumni = filteredData.filter(a => !existingIds.has(a.id))
           return [...prev, ...newAlumni]
         })
       }
-      setHasMore((data?.length || 0) === PAGE_SIZE)
-      setTotalCount(count ?? 0)
+      
+      // Update pagination state
+      if (needsClientSideFiltering) {
+        // For client-side filtering, we need to fetch all data to get accurate count
+        // This is a limitation but necessary for accurate city filtering
+        const allData = data || [];
+        const allFilteredData = allData.filter(alum => {
+          return filters.city.some(city => matchesCityFilter(alum.location, city));
+        });
+        setTotalCount(allFilteredData.length);
+        setHasMore((pageNum + 1) * PAGE_SIZE < allFilteredData.length);
+      } else {
+        setHasMore((filteredData?.length || 0) === PAGE_SIZE)
+        setTotalCount(count ?? 0)
+      }
     } catch (err) {
-      console.error('Exception while fetching alumni:', err)
+      console.error('❌ Exception while fetching alumni:', err)
     } finally {
       setLoading(false)
     }
@@ -229,6 +290,9 @@ export default function Home() {
     setPage(0)
     setHasMore(true)
     setTotalCount(null)
+    // Clear cache when filters change
+    setFilteredCache([])
+    setLastFilterHash('')
     fetchAlumni(0, true)
   }, [searchQuery, JSON.stringify(filters)])
 
@@ -411,6 +475,8 @@ export default function Home() {
                 'operations',
                 'strategy',
               ]}
+              typeSpeed={120}
+              deleteSpeed={80}
               className="text-primary font-medium underline underline-offset-4"
             />
           </p>

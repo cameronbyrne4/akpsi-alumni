@@ -111,7 +111,6 @@ export type Alumni = {
   bio?: string;
   role?: string;
   companies?: string[];
-  industry?: string[];
   big_brother?: string;
   little_brothers?: string[];
   family_branch?: string;

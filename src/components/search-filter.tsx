@@ -77,13 +77,13 @@ export function SearchFilter({
   // Combine default city options with additional ones
   const allCityOptions = React.useMemo(() => {
     const defaultOptions = [
-      { label: 'New York, NY', value: 'New York, NY' },
-      { label: 'San Francisco, CA', value: 'San Francisco, CA' },
-      { label: 'Seattle, WA', value: 'Seattle, WA' },
-      { label: 'Boston, MA', value: 'Boston, MA' },
-      { label: 'Chicago, IL', value: 'Chicago, IL' },
-      { label: 'Austin, TX', value: 'Austin, TX' },
-      { label: 'Los Angeles, CA', value: 'Los Angeles, CA' },
+      { label: 'New York', value: 'New York' },
+      { label: 'San Francisco', value: 'San Francisco' },
+      { label: 'Seattle', value: 'Seattle' },
+      { label: 'Boston', value: 'Boston' },
+      { label: 'Chicago', value: 'Chicago' },
+      { label: 'Austin', value: 'Austin' },
+      { label: 'Los Angeles', value: 'Los Angeles' },
       { label: 'Washington DC', value: 'Washington DC' },
     ]
     // Merge additional options, avoiding duplicates
