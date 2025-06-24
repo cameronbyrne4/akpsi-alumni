@@ -35,6 +35,68 @@ const examplePrompts = [
   "Big 4 consultants in Los Angeles",
 ];
 
+// Helper function to check if alumni has worked at any of the selected companies
+const hasWorkedAtCompanies = (alum: Alumni, selectedCompanies: string[]): boolean => {
+  if (!selectedCompanies.length) return true;
+  
+  const selectedCompaniesLower = selectedCompanies.map(c => c.toLowerCase());
+  
+  // Check companies array (manual data)
+  if (alum.companies && alum.companies.length > 0) {
+    for (const company of alum.companies) {
+      if (selectedCompaniesLower.some(selected => 
+        company.toLowerCase().includes(selected) || selected.includes(company.toLowerCase())
+      )) {
+        console.log(`✅ Company match in companies array: "${company}" matches "${selectedCompanies.join(', ')}" for ${alum.name}`);
+        return true;
+      }
+    }
+  }
+  
+  // Check career_history for enriched data
+  if (alum.has_enrichment && alum.career_history && alum.career_history.length > 0) {
+    for (const experience of alum.career_history) {
+      if (experience.company_name && selectedCompaniesLower.some(selected => 
+        experience.company_name.toLowerCase().includes(selected) || 
+        selected.includes(experience.company_name.toLowerCase())
+      )) {
+        console.log(`✅ Company match in enriched career_history: "${experience.company_name}" matches "${selectedCompanies.join(', ')}" for ${alum.name}`);
+        return true;
+      }
+    }
+  }
+  
+  // Check career_history for scraped data
+  if (alum.scraped && alum.career_history && alum.career_history.length > 0) {
+    for (const history of alum.career_history) {
+      // Handle scraped data structure with experiences array
+      if ('experiences' in history && Array.isArray((history as any).experiences)) {
+        const experiences = (history as any).experiences;
+        for (const exp of experiences) {
+          if (exp.company && selectedCompaniesLower.some(selected => 
+            exp.company.toLowerCase().includes(selected) || 
+            selected.includes(exp.company.toLowerCase())
+          )) {
+            console.log(`✅ Company match in scraped experiences: "${exp.company}" matches "${selectedCompanies.join(', ')}" for ${alum.name}`);
+            return true;
+          }
+        }
+      }
+      
+      // Handle direct company field in scraped data
+      if ('company' in history && (history as any).company && selectedCompaniesLower.some(selected => 
+        (history as any).company.toLowerCase().includes(selected) || 
+        selected.includes((history as any).company.toLowerCase())
+      )) {
+        console.log(`✅ Company match in scraped direct company: "${(history as any).company}" matches "${selectedCompanies.join(', ')}" for ${alum.name}`);
+        return true;
+      }
+    }
+  }
+  
+  return false;
+};
+
 export default function Home() {
   const currentYear = new Date().getFullYear()
   const [alumni, setAlumni] = useState<Alumni[]>([])
@@ -130,11 +192,11 @@ export default function Home() {
       q = q.or(`name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%`)
     }
     
-    // Company - simple contains search
+    // Company - comprehensive search across all data sources
     if (filters.company.length > 0) {
-      console.log('🔍 Adding company filters:', filters.company)
-      // Use the first company for now - we can improve this later
-      q = q.contains('companies', [filters.company[0]])
+      console.log('🔍 Company filters will be applied client-side:', filters.company)
+      // All company filtering is done client-side to handle all data structures properly
+      // This ensures we catch all cases: enriched data, scraped data, and manual companies array
     }
     
     // Role - simple text search
@@ -162,9 +224,9 @@ export default function Home() {
     console.log('🚀 fetchAlumni called with:', { pageNum, reset })
     setLoading(true)
     
-    // If we have city filters, we need to fetch all data and filter client-side
-    // because Supabase can't handle our complex city matching logic
-    const needsClientSideFiltering = filters.city.length > 0;
+    // If we have city filters or company filters, we need to fetch all data and filter client-side
+    // because Supabase can't handle our complex filtering logic
+    const needsClientSideFiltering = filters.city.length > 0 || filters.company.length > 0;
     
     // Create a hash of current filters to check if we need to refetch
     const currentFilterHash = JSON.stringify({
@@ -176,7 +238,7 @@ export default function Home() {
       city: filters.city
     });
     
-    // If we have city filters and the cache is valid, use it
+    // If we have client-side filtering and the cache is valid, use it
     if (needsClientSideFiltering && !reset && lastFilterHash === currentFilterHash && filteredCache.length > 0) {
       console.log('🔍 Using cached filtered results')
       const startIndex = pageNum * PAGE_SIZE;
@@ -215,18 +277,28 @@ export default function Home() {
       // Apply city filtering client-side if needed
       let filteredData = data || [];
       if (needsClientSideFiltering) {
-        console.log('🔍 Applying city filters client-side:', filters.city)
-        filteredData = filteredData.filter(alum => {
-          const matches = filters.city.some(city => {
-            const isMatch = matchesCityFilter(alum.location, city);
-            if (isMatch) {
-              console.log(`✅ Match: "${alum.location}" matches city filter "${city}"`);
-            }
-            return isMatch;
+        // Apply city filtering if needed
+        if (filters.city.length > 0) {
+          console.log('🔍 Applying city filters client-side:', filters.city)
+          filteredData = filteredData.filter(alum => {
+            const matches = filters.city.some(city => {
+              const isMatch = matchesCityFilter(alum.location, city);
+              if (isMatch) {
+                console.log(`✅ Match: "${alum.location}" matches city filter "${city}"`);
+              }
+              return isMatch;
+            });
+            return matches;
           });
-          return matches;
-        });
-        console.log('🔍 After city filtering:', filteredData.length, 'results')
+          console.log('🔍 After city filtering:', filteredData.length, 'results')
+        }
+        
+        // Apply company filtering if needed
+        if (filters.company.length > 0) {
+          console.log('🔍 Applying company filter client-side:', filters.company)
+          filteredData = filteredData.filter(alum => hasWorkedAtCompanies(alum, filters.company));
+          console.log('🔍 After company filtering:', filteredData.length, 'results')
+        }
         
         // Cache the filtered results
         setFilteredCache(filteredData);
@@ -269,11 +341,22 @@ export default function Home() {
       // Update pagination state
       if (needsClientSideFiltering) {
         // For client-side filtering, we need to fetch all data to get accurate count
-        // This is a limitation but necessary for accurate city filtering
+        // This is a limitation but necessary for accurate filtering
         const allData = data || [];
-        const allFilteredData = allData.filter(alum => {
-          return filters.city.some(city => matchesCityFilter(alum.location, city));
-        });
+        let allFilteredData = allData;
+        
+        // Apply city filtering to get total count
+        if (filters.city.length > 0) {
+          allFilteredData = allFilteredData.filter(alum => {
+            return filters.city.some(city => matchesCityFilter(alum.location, city));
+          });
+        }
+        
+        // Apply company filtering to get total count
+        if (filters.company.length > 0) {
+          allFilteredData = allFilteredData.filter(alum => hasWorkedAtCompanies(alum, filters.company));
+        }
+        
         setTotalCount(allFilteredData.length);
         setHasMore((pageNum + 1) * PAGE_SIZE < allFilteredData.length);
       } else {
