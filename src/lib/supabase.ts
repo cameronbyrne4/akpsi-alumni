@@ -5,7 +5,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
-interface CareerExperience {
+export interface CareerExperience {
   title: string; // Software Engineer or Product Manager or etc.
   company_name: string; // Google or Apple or etc.
   start_date: string; // 2020-01-01
@@ -15,7 +15,7 @@ interface CareerExperience {
   company_logo?: string;
 }
 
-interface Education {
+export interface Education {
   degree: string; // BS or MS or PHD
   field_of_study: string; // Computer Science or Business or Engineering or etc.
   school_name: string; // University of California, Berkeley or Stanford University or etc.

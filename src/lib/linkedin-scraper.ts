@@ -279,7 +279,8 @@ class LinkedInScraper {
       
     } catch (error) {
       await this.page!.screenshot({ path: 'login_error.png', fullPage: true });
-      throw new Error(`Login failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Login failed: ${errorMessage}`);
     }
   }
 

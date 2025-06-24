@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Alumni } from '@/lib/supabase';
+import { Alumni, CareerExperience, Education } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, Trash2, PlusCircle, Pencil, X } from 'lucide-react';
+import { Loader2, Trash2, PlusCircle, Pencil } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Toaster } from '@/components/ui/toaster';
 import {
@@ -26,7 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -44,7 +43,7 @@ const formatDate = (dateString: string | undefined | null) => {
     const date = new Date(dateString);
     // Use UTC methods to avoid timezone issues
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-  } catch (e) {
+  } catch {
     return dateString; // Return original string if parsing fails
   }
 };
@@ -54,7 +53,7 @@ const formatEducationDate = (dateString: string | undefined | null) => {
   try {
     const date = new Date(dateString);
     return date.getUTCFullYear().toString();
-  } catch (e) {
+  } catch {
     return dateString; // Return original string if parsing fails
   }
 };
@@ -68,8 +67,8 @@ const ExperienceForm = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (experience: any) => void;
-  experience: any | null;
+  onSave: (experience: CareerExperience) => void;
+  experience: CareerExperience | null;
 }) => {
   const [title, setTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -136,7 +135,7 @@ const ExperienceForm = ({
       return;
     }
 
-    const experienceData = {
+    const experienceData: CareerExperience = {
       title,
       company_name: companyName,
       location,
@@ -211,10 +210,17 @@ const ExperienceForm = ({
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <textarea id="description" value={description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)} placeholder="Describe their role and accomplishments." className="w-full min-h-[100px] px-3 py-2 border rounded-md bg-transparent" />
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe their role and achievements..."
+              className="w-full min-h-[100px] p-3 border border-input rounded-md bg-background text-foreground resize-vertical"
+            />
           </div>
         </div>
         <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave}>Save</Button>
         </DialogFooter>
       </DialogContent>
@@ -231,12 +237,13 @@ const EducationForm = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (education: any) => void;
-  education: any | null;
+  onSave: (education: Education) => void;
+  education: Education | null;
 }) => {
-  const [schoolName, setSchoolName] = useState('');
   const [degree, setDegree] = useState('');
   const [fieldOfStudy, setFieldOfStudy] = useState('');
+  const [schoolName, setSchoolName] = useState('');
+  const [isCurrentStudent, setIsCurrentStudent] = useState(false);
   const [startYear, setStartYear] = useState('');
   const [endYear, setEndYear] = useState('');
   const [description, setDescription] = useState('');
@@ -245,27 +252,33 @@ const EducationForm = ({
 
   useEffect(() => {
     if (isOpen && education) {
-      setSchoolName(education.school_name || '');
       setDegree(education.degree || '');
       setFieldOfStudy(education.field_of_study || '');
+      setSchoolName(education.school_name || '');
       setDescription(education.description || '');
 
+      const isCurrent = education.end_date === 'Present' || !education.end_date;
+      setIsCurrentStudent(isCurrent);
+
       if (education.start_date) {
-        setStartYear(new Date(education.start_date).getUTCFullYear().toString());
+        const startDate = new Date(education.start_date);
+        setStartYear(startDate.getUTCFullYear().toString());
       } else {
         setStartYear('');
       }
 
-      if (education.end_date) {
-        setEndYear(new Date(education.end_date).getUTCFullYear().toString());
+      if (!isCurrent && education.end_date) {
+        const endDate = new Date(education.end_date);
+        setEndYear(endDate.getUTCFullYear().toString());
       } else {
         setEndYear('');
       }
     } else if (isOpen) {
       // Reset form for new education
-      setSchoolName('');
       setDegree('');
       setFieldOfStudy('');
+      setSchoolName('');
+      setIsCurrentStudent(false);
       setStartYear('');
       setEndYear('');
       setDescription('');
@@ -273,18 +286,19 @@ const EducationForm = ({
   }, [isOpen, education]);
 
   const handleSave = () => {
-    if (!schoolName || !startYear || !endYear) {
+    if (!degree || !fieldOfStudy || !schoolName || !startYear) {
+      // Basic validation
       alert('Please fill in all required fields.');
       return;
     }
 
-    const educationData = {
-      school_name: schoolName,
+    const educationData: Education = {
       degree,
       field_of_study: fieldOfStudy,
+      school_name: schoolName,
       description,
       start_date: new Date(Date.UTC(parseInt(startYear), 0, 1)).toISOString(),
-      end_date: new Date(Date.UTC(parseInt(endYear), 0, 1)).toISOString(),
+      end_date: isCurrentStudent ? 'Present' : new Date(Date.UTC(parseInt(endYear), 0, 1)).toISOString(),
       school_logo: education?.school_logo || '', // Preserve existing logo
     };
     onSave(educationData);
@@ -348,7 +362,6 @@ export default function UpdateAlumniPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [alumni, setAlumni] = useState<Alumni | null>(null);
-  const [updateSuccess, setUpdateSuccess] = useState(false);
   const [formData, setFormData] = useState<Alumni>({
     id: '',
     name: '',
@@ -366,8 +379,8 @@ export default function UpdateAlumniPage() {
     phones: [] as string[],
     majors: [] as string[],
     minors: [] as string[],
-    career_history: [] as any[],
-    education: [] as any[],
+    career_history: [] as CareerExperience[],
+    education: [] as Education[],
     has_linkedin: false,
     scraped: false,
     manually_verified: false,
@@ -395,8 +408,8 @@ export default function UpdateAlumniPage() {
     phones: [] as string[],
     majors: [] as string[],
     minors: [] as string[],
-    career_history: [] as any[],
-    education: [] as any[],
+    career_history: [] as CareerExperience[],
+    education: [] as Education[],
     has_linkedin: false,
     scraped: false,
     manually_verified: false,
@@ -408,12 +421,12 @@ export default function UpdateAlumniPage() {
 
   // Experience form state
   const [isExperienceModalOpen, setIsExperienceModalOpen] = useState(false);
-  const [editingExperience, setEditingExperience] = useState<any | null>(null);
+  const [editingExperience, setEditingExperience] = useState<CareerExperience | null>(null);
   const [editingExperienceIndex, setEditingExperienceIndex] = useState<number | null>(null);
 
   // Education form state
   const [isEducationModalOpen, setIsEducationModalOpen] = useState(false);
-  const [editingEducation, setEditingEducation] = useState<any | null>(null);
+  const [editingEducation, setEditingEducation] = useState<Education | null>(null);
   const [editingEducationIndex, setEditingEducationIndex] = useState<number | null>(null);
 
   // Fetch all alumni names for lookup
@@ -461,7 +474,6 @@ export default function UpdateAlumniPage() {
 
     setLoading(true);
     setAlumni(null);
-    setUpdateSuccess(false);
     setIsCreating(false);
     try {
       const { data, error } = await supabase
@@ -586,7 +598,7 @@ export default function UpdateAlumniPage() {
     }
 
     // Check if the new name already exists
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('alumni')
       .select('name')
       .ilike('name', name)
@@ -601,8 +613,8 @@ export default function UpdateAlumniPage() {
     return true;
   };
 
-  const handleInputChange = async (field: keyof Alumni, value: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  const handleInputChange = async (field: keyof Alumni, value: unknown) => {
+    setFormData((prev: Alumni) => ({ ...prev, [field]: value }));
 
     if (field === 'big_brother') {
       await validateBigBrother(value as string);
@@ -631,11 +643,11 @@ export default function UpdateAlumniPage() {
       const bigBrotherId = getIdFromName(bigBrotherName);
 
       // Helper function to convert string to array for array fields
-      const convertToArray = (value: any): string[] => {
+      const convertToArray = (value: unknown): string[] => {
         if (typeof value === 'string') {
           return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
         }
-        return value || [];
+        return value as string[] || [];
       };
 
       // Create update object with only changed fields and required fields
@@ -669,7 +681,6 @@ export default function UpdateAlumniPage() {
         .eq('id', alumni.id);
 
       if (error) throw error;
-      setUpdateSuccess(true);
       toast({
         title: "Success!",
         description: "Alumni information updated successfully.",
@@ -744,8 +755,8 @@ export default function UpdateAlumniPage() {
         phones: [] as string[],
         majors: [] as string[],
         minors: [] as string[],
-        career_history: [] as any[],
-        education: [] as any[],
+        career_history: [] as CareerExperience[],
+        education: [] as Education[],
         has_linkedin: false,
         scraped: false,
         manually_verified: false,
@@ -795,8 +806,8 @@ export default function UpdateAlumniPage() {
         phones: newAlumniData.phones || [] as string[],
         majors: newAlumniData.majors || [] as string[],
         minors: newAlumniData.minors || [] as string[],
-        career_history: newAlumniData.career_history || [] as any[],
-        education: newAlumniData.education || [] as any[],
+        career_history: newAlumniData.career_history || [] as CareerExperience[],
+        education: newAlumniData.education || [] as Education[],
         source_sheet: newAlumniData.source_sheet || [] as string[],
         has_linkedin: newAlumniData.has_linkedin || false,
         scraped: newAlumniData.scraped || false,
@@ -844,8 +855,8 @@ export default function UpdateAlumniPage() {
         phones: [] as string[],
         majors: [] as string[],
         minors: [] as string[],
-        career_history: [] as any[],
-        education: [] as any[],
+        career_history: [] as CareerExperience[],
+        education: [] as Education[],
         has_linkedin: false,
         scraped: false,
         manually_verified: false,
@@ -871,18 +882,18 @@ export default function UpdateAlumniPage() {
   };
 
   const handleEditExperience = (index: number) => {
-    setEditingExperience(formData.career_history[index]);
+    setEditingExperience(formData.career_history?.[index] || null);
     setEditingExperienceIndex(index);
     setIsExperienceModalOpen(true);
   };
 
   const handleDeleteExperience = (index: number) => {
-    const updatedHistory = [...formData.career_history];
+    const updatedHistory = [...(formData.career_history || [])];
     updatedHistory.splice(index, 1);
     updateRoleAndCompaniesFromHistory(updatedHistory);
   };
 
-  const handleSaveExperience = (experienceData: any) => {
+  const handleSaveExperience = (experienceData: CareerExperience) => {
     const updatedHistory = [...(formData.career_history || [])];
     if (editingExperienceIndex !== null) {
       // Editing existing
@@ -895,10 +906,10 @@ export default function UpdateAlumniPage() {
     setIsExperienceModalOpen(false);
   };
 
-  const updateRoleAndCompaniesFromHistory = (history: any[]) => {
+  const updateRoleAndCompaniesFromHistory = (history: CareerExperience[]) => {
     if (!history) return;
 
-    const getMostRecentExperience = (h: any[]) => {
+    const getMostRecentExperience = (h: CareerExperience[]) => {
       if (!h || h.length === 0) return null;
 
       const presentJobs = h.filter(exp => exp.end_date === 'Present');
@@ -922,11 +933,11 @@ export default function UpdateAlumniPage() {
     const latestRole = latestExperience ? latestExperience.title : '';
     const allCompanies = history.length > 0 ? [...new Set(history.map(exp => exp.company_name).filter(Boolean))] : [];
     
-    setFormData((prev: any) => ({
+    setFormData((prev: Alumni) => ({
         ...prev,
         career_history: history,
         role: latestRole,
-        companies: allCompanies.join(', ')
+        companies: allCompanies
     }));
   }
 
@@ -937,18 +948,18 @@ export default function UpdateAlumniPage() {
   };
 
   const handleEditEducation = (index: number) => {
-    setEditingEducation(formData.education[index]);
+    setEditingEducation(formData.education?.[index] || null);
     setEditingEducationIndex(index);
     setIsEducationModalOpen(true);
   };
 
   const handleDeleteEducation = (index: number) => {
-    const updatedEducation = [...formData.education];
+    const updatedEducation = [...(formData.education || [])];
     updatedEducation.splice(index, 1);
     handleInputChange('education', updatedEducation);
   };
 
-  const handleSaveEducation = (educationData: any) => {
+  const handleSaveEducation = (educationData: Education) => {
     const updatedEducation = [...(formData.education || [])];
     if (editingEducationIndex !== null) {
       // Editing existing
@@ -1011,8 +1022,8 @@ export default function UpdateAlumniPage() {
                       phones: [] as string[],
                       majors: [] as string[],
                       minors: [] as string[],
-                      career_history: [] as any[],
-                      education: [] as any[],
+                      career_history: [] as CareerExperience[],
+                      education: [] as Education[],
                       has_linkedin: false,
                       scraped: false,
                       manually_verified: false,
@@ -1106,8 +1117,8 @@ export default function UpdateAlumniPage() {
                       phones: [] as string[],
                       majors: [] as string[],
                       minors: [] as string[],
-                      career_history: [] as any[],
-                      education: [] as any[],
+                      career_history: [] as CareerExperience[],
+                      education: [] as Education[],
                       has_linkedin: false,
                       scraped: false,
                       manually_verified: false,
@@ -1317,7 +1328,7 @@ export default function UpdateAlumniPage() {
                   <Label>Career History</Label>
                   <div className="rounded-md border p-4 space-y-4">
                     {formData.career_history && formData.career_history.length > 0 ? (
-                      formData.career_history.map((exp: any, index: number) => (
+                      formData.career_history.map((exp: CareerExperience, index: number) => (
                         <div key={index} className="flex items-start justify-between border-b pb-4 last:border-b-0">
                           <div className="flex-1 pr-4">
                             <h4 className="font-semibold">{exp.title}</h4>
@@ -1373,7 +1384,7 @@ export default function UpdateAlumniPage() {
                   <Label>Education</Label>
                   <div className="rounded-md border p-4 space-y-4">
                     {formData.education && formData.education.length > 0 ? (
-                      formData.education.map((edu: any, index: number) => (
+                      formData.education.map((edu: Education, index: number) => (
                         <div key={index} className="flex items-start justify-between border-b pb-4 last:border-b-0">
                           <div className="flex-1 pr-4">
                             <h4 className="font-semibold">{edu.school_name}</h4>
@@ -1444,16 +1455,15 @@ export default function UpdateAlumniPage() {
                      if (!alumni) return;
                      setFormData({
                        ...alumni,
-                       companies: (alumni.companies || []).join(', '),
-                       little_brothers: (alumni.little_brothers || []).join(', '),
-                       emails: (alumni.emails || []).join(', '),
-                       phones: (alumni.phones || []).join(', '),
-                       majors: (alumni.majors || []).join(', '),
-                       minors: (alumni.minors || []).join(', '),
-                       source_sheet: (alumni.source_sheet || []).join(', '),
+                       companies: alumni.companies || [],
+                       little_brothers: alumni.little_brothers || [],
+                       emails: alumni.emails || [],
+                       phones: alumni.phones || [],
+                       majors: alumni.majors || [],
+                       minors: alumni.minors || [],
+                       source_sheet: alumni.source_sheet || [],
                      });
                      setBigBrotherName(getNameFromId(alumni.big_brother ?? null));
-                     setUpdateSuccess(false);
                      setBigBrotherError(null);
                      setNameError(null);
                   }}

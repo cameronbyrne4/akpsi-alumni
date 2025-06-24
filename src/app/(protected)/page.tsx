@@ -8,7 +8,7 @@ import type { Alumni } from '@/lib/supabase'
 import { Loader2, X, Info } from 'lucide-react'
 import { AiSearchBar } from '@/components/ai-search-bar'
 import { useLayoutContext } from '@/components/client-layout-shell'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Typewriter } from '@/components/ui/typewriter'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
@@ -128,7 +128,6 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
   const aiInputRef = useRef<string | null>(null)
-  const searchParams = useSearchParams()
   const router = useRouter()
   const [aiLocationCities, setAiLocationCities] = useState<{ label: string; value: string }[]>([])
   const [aiInputValue, setAiInputValue] = useState('');
@@ -141,16 +140,6 @@ export default function Home() {
   const isSearchActive = hasSearched || manualSearchMode;
 
   const totalPages = totalCount ? Math.ceil(totalCount / PAGE_SIZE) : 1;
-
-  // If ?manual=1 is present, activate manual search mode
-  useEffect(() => {
-    if (searchParams.get('manual') === '1') {
-      setManualSearchMode(true)
-      setHasSearched(false)
-      // Remove the query param from the URL after activating
-      router.replace('/', { scroll: false })
-    }
-  }, [searchParams, setManualSearchMode, router])
 
   // Smooth scroll to manual filter when toggling
   useEffect(() => {

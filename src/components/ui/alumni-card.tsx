@@ -329,7 +329,6 @@ export function AlumniCard({
         scraped={scraped}
         careerHistory={careerHistory}
         education={education}
-        currentCompany={currentCompany}
       />
     </Dialog>
   )
