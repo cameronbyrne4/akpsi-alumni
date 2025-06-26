@@ -7,7 +7,7 @@ import { ContactIcons } from '@/components/ui/contact-icons'
 import { formatLocation, getRandomAvatar } from '@/lib/utils'
 import Image from 'next/image'
 import { getCompanyColor } from '@/lib/company-colors'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { familyColors } from '@/lib/family-colors'
 
 function CompanyBadge({ company }: { company: string }) {
@@ -78,6 +78,12 @@ interface AlumniCardProps {
 // Reusable avatar component with fallback logic
 export function ProfileAvatar({ name, pictureUrl, size = 80 }: { name: string; pictureUrl?: string | null; size?: number }) {
   const [imgSrc, setImgSrc] = useState(pictureUrl || getRandomAvatar(name));
+
+  // Add this effect to update imgSrc when name or pictureUrl changes
+  useEffect(() => {
+    setImgSrc(pictureUrl || getRandomAvatar(name));
+  }, [name, pictureUrl]);
+
   return (
     <span
       className="block rounded-full overflow-hidden bg-white border-4 border-white shadow-lg"

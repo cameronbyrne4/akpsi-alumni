@@ -653,7 +653,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              className={manualSearchMode ? "mb-8 mt-8" : "mb-8"}
+              className="mb-8 mt-4"
             >
               <SearchFilter
                 onSearch={setSearchQuery}

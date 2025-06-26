@@ -17,6 +17,11 @@ export async function POST(req: NextRequest) {
 - family_branch: string or null (e.g., "Lambda", "Gamma")
 - companies: array of strings or null (e.g., ["Google", "Microsoft"])
 
+CRITICAL CONTEXT RULES:
+1. When users explicitly mention "company" or "companies" (e.g., "work at tech company", "people at FAANG companies"), focus ONLY on company filtering and do NOT add role filters unless specifically requested
+2. When users mention industries without "company" (e.g., "tech workers", "finance professionals", "consulting"), apply both company AND role filters
+3. When users mention specific roles (e.g., "software engineers", "consultants"), apply role filters regardless of company context
+
 Important industry mapping rules:
 1. When an industry is mentioned (e.g., "finance", "technology", "consulting"), map it to relevant companies
 2. For finance industry, include: ["Goldman Sachs", "JPMorgan", "Morgan Stanley", "Citigroup", "Bank of America", "Wells Fargo", "BlackRock", "Vanguard", "Fidelity", "Charles Schwab"]
@@ -124,6 +129,16 @@ Example output: {
   "graduation_year_max": null,
   "family_branch": null,
   "companies": ["Meta", "Apple", "Amazon", "Netflix", "Google"]
+}
+
+Example input: "work at tech company"
+Example output: {
+  "role": null,
+  "location": null,
+  "graduation_year_min": null,
+  "graduation_year_max": null,
+  "family_branch": null,
+  "companies": ["Google", "Apple", "Meta", "Microsoft", "Amazon", "Netflix", "Tesla", "NVIDIA", "Salesforce", "Adobe", "Oracle", "Intel", "AMD", "Cisco", "IBM"]
 }
 
 Example input: "Big 3 consultants in New York"

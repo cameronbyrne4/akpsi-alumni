@@ -22,6 +22,8 @@ export function AiSearchBar({ onSubmit, value, onChange, isLoading }: AiSearchBa
     }
   }
 
+  const hasInput = inputValue.trim().length > 0
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center w-full mb-8">
       <div className={`w-full max-w-2xl flex items-center rounded-2xl border bg-white shadow px-6 py-4 transition-all duration-300 ${
@@ -40,11 +42,17 @@ export function AiSearchBar({ onSubmit, value, onChange, isLoading }: AiSearchBa
         />
         <button
           type="submit"
-          className="ml-2 rounded-full bg-gray-100 hover:bg-gray-200 p-2 transition"
+          className={`ml-2 rounded-full p-2 transition-all duration-200 ${
+            hasInput 
+              ? 'bg-blue-500 hover:bg-blue-600' 
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
           aria-label="Search"
           disabled={isLoading}
         >
-          <ArrowUpRight className={`h-6 w-6 text-gray-500 ${isLoading ? 'opacity-50' : ''}`} />
+          <ArrowUpRight className={`h-6 w-6 transition-colors duration-200 ${
+            hasInput ? 'text-white' : 'text-gray-500'
+          } ${isLoading ? 'opacity-50' : ''}`} />
         </button>
       </div>
       {/* Optional: Suggested queries as chips can go here */}
