@@ -525,11 +525,9 @@ export default function Home() {
                       A search tool to connect with our very cracked alumni for mentorship and career opportunities.
                     </p>
                     <div className="pt-2 border-t">
-                      <p className="text-sm font-medium">Credits</p>
                       <p className="text-sm text-muted-foreground">
-                        <a href="https://linkedin.com/in/cameronbyrne00" target="_blank" rel="noopener noreferrer" className="text-muted-foreground underline underline-offset-2 hover:text-primary transition-colors">Cameron Byrne</a> + Parth Mahajan
+                        <a href="https://linkedin.com/in/cameronbyrne00" target="_blank" rel="noopener noreferrer" className="text-muted-foreground underline underline-offset-2 hover:text-primary transition-colors">Cameron Byrne</a> • May 2025
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">May 2025</p>
                     </div>
                   </div>
                 </div>
