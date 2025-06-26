@@ -176,47 +176,27 @@ export default function Home() {
         .not('career_history', 'eq', '{"bio":null,"experiences":[],"picture_url":null}')
     }
 
-    // Search - simple text search
+    // Search - simple text search (this can still be done server-side for efficiency)
     if (searchQuery) {
       console.log('🔍 Adding search query:', searchQuery)
       q = q.or(`name.ilike.%${searchQuery}%,role.ilike.%${searchQuery}%`)
     }
     
-    // Company - comprehensive search across all data sources
-    if (filters.company.length > 0) {
-      console.log('🔍 Company filters will be applied client-side:', filters.company)
-      // All company filtering is done client-side to handle all data structures properly
-      // This ensures we catch all cases: enriched data, scraped data, and manual companies array
-    }
-    
-    // Role - simple text search
-    if (filters.role.length > 0) {
-      console.log('🔍 Adding role filters:', filters.role)
-      // Use the first role for now - we can improve this later
-      q = q.ilike('role', `%${filters.role[0]}%`)
-    }
-    
-    // Note: City filtering will be done client-side after fetching data
-    // since we need to use the matchesCityFilter function
-    
-    // Graduation year
-    if (filters.graduationYear) {
-      console.log('🔍 Adding graduation year filter:', filters.graduationYear)
-      const [minYear, maxYear] = filters.graduationYear
-      q = q.gte('graduation_year', minYear).lte('graduation_year', maxYear)
-    }
+    // All other filtering will be done client-side for consistency
+    console.log('🔍 All other filters will be applied client-side')
     
     console.log('🔍 Final query built')
     return q
   }
 
   const fetchAlumni = async (pageNum: number, reset = false) => {
-    console.log('🚀 fetchAlumni called with:', { pageNum, reset })
+    console.log('🚀 fetchAlumni called with:', { pageNum, reset, filters })
     setLoading(true)
     
-    // If we have city filters or company filters, we need to fetch all data and filter client-side
-    // because Supabase can't handle our complex filtering logic
-    const needsClientSideFiltering = filters.city.length > 0 || filters.company.length > 0;
+    // Always use client-side filtering and pagination to ensure consistent results without duplicates
+    // This is safer than trying to mix server-side and client-side pagination
+    const needsClientSideFiltering = true;
+    console.log('🔍 Using client-side filtering for consistent pagination')
     
     // Create a hash of current filters to check if we need to refetch
     const currentFilterHash = JSON.stringify({
@@ -229,11 +209,13 @@ export default function Home() {
     });
     
     // If we have client-side filtering and the cache is valid, use it
-    if (needsClientSideFiltering && !reset && lastFilterHash === currentFilterHash && filteredCache.length > 0) {
+    // BUT only if we're not resetting (i.e., not changing pages or filters)
+    if (!reset && lastFilterHash === currentFilterHash && filteredCache.length > 0) {
       console.log('🔍 Using cached filtered results')
       const startIndex = pageNum * PAGE_SIZE;
       const endIndex = startIndex + PAGE_SIZE;
       const pageData = filteredCache.slice(startIndex, endIndex);
+      console.log('🔍 Page data from cache:', { startIndex, endIndex, pageDataLength: pageData.length, totalCacheLength: filteredCache.length })
       
       setAlumni(pageData);
       setTotalCount(filteredCache.length);
@@ -242,21 +224,23 @@ export default function Home() {
       return;
     }
     
+    // If we're resetting or cache is invalid, clear it
+    if (reset || lastFilterHash !== currentFilterHash) {
+      console.log('🔍 Clearing cache due to reset or filter change')
+      setFilteredCache([]);
+      setLastFilterHash('');
+    }
+    
     let q = buildQuery()
     
-    if (needsClientSideFiltering) {
-      // Fetch all data for client-side filtering
-      q = q.order('created_at', { ascending: false })
-    } else {
-      // Use normal pagination for other filters
-      q = q.order('created_at', { ascending: false })
-        .range(pageNum * PAGE_SIZE, pageNum * PAGE_SIZE + PAGE_SIZE - 1)
-    }
+    // Always fetch all data for client-side filtering and pagination
+    console.log('🔍 Fetching ALL data for client-side filtering and pagination')
+    q = q.order('created_at', { ascending: false })
     
     try {
       console.log('📡 Executing Supabase query...')
       const { data, error, count } = await q
-      console.log('📡 Query result:', { dataLength: data?.length, error, count })
+      console.log('📡 Query result:', { dataLength: data?.length, error, count, pageNum })
       
       if (error) {
         console.error('❌ Error fetching alumni:', error)
@@ -264,46 +248,86 @@ export default function Home() {
         return
       }
 
-      // Apply city filtering client-side if needed
+      // Apply all filtering client-side
       let filteredData = data || [];
-      if (needsClientSideFiltering) {
-        // Apply city filtering if needed
-        if (filters.city.length > 0) {
-          console.log('🔍 Applying city filters client-side:', filters.city)
-          filteredData = filteredData.filter(alum => {
-            const matches = filters.city.some(city => {
-              const isMatch = matchesCityFilter(alum.location, city);
-              if (isMatch) {
-                console.log(`✅ Match: "${alum.location}" matches city filter "${city}"`);
-              }
-              return isMatch;
-            });
-            return matches;
+      
+      // Apply city filtering if needed
+      if (filters.city.length > 0) {
+        console.log('🔍 Applying city filters client-side:', filters.city)
+        filteredData = filteredData.filter(alum => {
+          const matches = filters.city.some(city => {
+            const isMatch = matchesCityFilter(alum.location, city);
+            if (isMatch) {
+              console.log(`✅ Match: "${alum.location}" matches city filter "${city}"`);
+            }
+            return isMatch;
           });
-          console.log('🔍 After city filtering:', filteredData.length, 'results')
-        }
-        
-        // Apply company filtering if needed
-        if (filters.company.length > 0) {
-          console.log('🔍 Applying company filter client-side:', filters.company)
-          filteredData = filteredData.filter(alum => hasWorkedAtCompanies(alum, filters.company));
-          console.log('🔍 After company filtering:', filteredData.length, 'results')
-        }
-        
-        // Cache the filtered results
-        setFilteredCache(filteredData);
-        setLastFilterHash(currentFilterHash);
-        
-        // Apply client-side pagination
-        const startIndex = pageNum * PAGE_SIZE;
-        const endIndex = startIndex + PAGE_SIZE;
-        filteredData = filteredData.slice(startIndex, endIndex);
-        console.log('🔍 After pagination:', filteredData.length, 'results for page', pageNum)
-      } else {
-        // Clear cache when not using client-side filtering
-        setFilteredCache([]);
-        setLastFilterHash('');
+          return matches;
+        });
+        console.log('🔍 After city filtering:', filteredData.length, 'results')
       }
+      
+      // Apply company filtering if needed
+      if (filters.company.length > 0) {
+        console.log('🔍 Applying company filter client-side:', filters.company)
+        filteredData = filteredData.filter(alum => hasWorkedAtCompanies(alum, filters.company));
+        console.log('🔍 After company filtering:', filteredData.length, 'results')
+      }
+      
+      // Apply role filtering if needed
+      if (filters.role.length > 0) {
+        console.log('🔍 Applying role filter client-side:', filters.role)
+        filteredData = filteredData.filter(alum => {
+          return filters.role.some(role => 
+            alum.role?.toLowerCase().includes(role.toLowerCase())
+          );
+        });
+        console.log('🔍 After role filtering:', filteredData.length, 'results')
+      }
+      
+      // Apply graduation year filtering if needed
+      if (filters.graduationYear) {
+        console.log('🔍 Applying graduation year filter client-side:', filters.graduationYear)
+        const [minYear, maxYear] = filters.graduationYear;
+        filteredData = filteredData.filter(alum => {
+          return alum.graduation_year && alum.graduation_year >= minYear && alum.graduation_year <= maxYear;
+        });
+        console.log('🔍 After graduation year filtering:', filteredData.length, 'results')
+      }
+      
+      // Apply hasCompleteProfile filtering if needed
+      if (filters.hasCompleteProfile) {
+        console.log('🔍 Applying hasCompleteProfile filter client-side')
+        filteredData = filteredData.filter(alum => {
+          return (
+            alum.scraped === true ||
+            alum.has_enrichment === true ||
+            alum.linkedin_url ||
+            (alum.role && alum.location) ||
+            (alum.career_history && 
+             Array.isArray(alum.career_history) && 
+             alum.career_history.length > 0 &&
+             !(alum.career_history.length === 1 && 
+               typeof alum.career_history[0] === 'object' && 
+               'bio' in alum.career_history[0] && 
+               'experiences' in alum.career_history[0] && 
+               Array.isArray((alum.career_history[0] as any).experiences) && 
+               (alum.career_history[0] as any).experiences.length === 0))
+          );
+        });
+        console.log('🔍 After hasCompleteProfile filtering:', filteredData.length, 'results')
+      }
+      
+      // Cache the filtered results (only the full filtered dataset, not the paginated slice)
+      const fullFilteredData = [...filteredData]; // Store the complete filtered dataset
+      setFilteredCache(fullFilteredData);
+      setLastFilterHash(currentFilterHash);
+      
+      // Apply client-side pagination
+      const startIndex = pageNum * PAGE_SIZE;
+      const endIndex = startIndex + PAGE_SIZE;
+      filteredData = fullFilteredData.slice(startIndex, endIndex);
+      console.log('🔍 After client-side pagination:', { startIndex, endIndex, filteredDataLength: filteredData.length, pageNum, totalFilteredLength: fullFilteredData.length })
 
       // Debug: Check for duplicate IDs
       if (filteredData) {
@@ -314,45 +338,19 @@ export default function Home() {
             ids.filter(id => ids.indexOf(id) !== ids.lastIndexOf(id))
           )
         }
+        console.log('🔍 Final alumni IDs for this page:', ids)
       }
 
-      console.log('✅ Fetched alumni data:', filteredData)
-      if (reset) {
-        setAlumni(filteredData)
-      } else {
-        // Ensure we don't add duplicates when appending
-        setAlumni(prev => {
-          const existingIds = new Set(prev.map(a => a.id))
-          const newAlumni = filteredData.filter(a => !existingIds.has(a.id))
-          return [...prev, ...newAlumni]
-        })
-      }
+      console.log('✅ Setting alumni data:', { length: filteredData.length, pageNum })
+      
+      // Always replace the alumni array when paginating - this is the key fix
+      // The previous logic was trying to append data, which caused duplicates
+      setAlumni(filteredData)
       
       // Update pagination state
-      if (needsClientSideFiltering) {
-        // For client-side filtering, we need to fetch all data to get accurate count
-        // This is a limitation but necessary for accurate filtering
-        const allData = data || [];
-        let allFilteredData = allData;
-        
-        // Apply city filtering to get total count
-        if (filters.city.length > 0) {
-          allFilteredData = allFilteredData.filter(alum => {
-            return filters.city.some(city => matchesCityFilter(alum.location, city));
-          });
-        }
-        
-        // Apply company filtering to get total count
-        if (filters.company.length > 0) {
-          allFilteredData = allFilteredData.filter(alum => hasWorkedAtCompanies(alum, filters.company));
-        }
-        
-        setTotalCount(allFilteredData.length);
-        setHasMore((pageNum + 1) * PAGE_SIZE < allFilteredData.length);
-      } else {
-        setHasMore((filteredData?.length || 0) === PAGE_SIZE)
-        setTotalCount(count ?? 0)
-      }
+      setTotalCount(fullFilteredData.length);
+      setHasMore((pageNum + 1) * PAGE_SIZE < fullFilteredData.length);
+      console.log('🔍 Pagination state:', { totalCount: fullFilteredData.length, hasMore: (pageNum + 1) * PAGE_SIZE < fullFilteredData.length })
     } catch (err) {
       console.error('❌ Exception while fetching alumni:', err)
     } finally {
@@ -402,7 +400,7 @@ export default function Home() {
     setAiInputValue(query)
     try {
       // Add artificial delay to make loading state visible
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      await new Promise(resolve => setTimeout(resolve, 1000))
       
       const res = await fetch('/api/ai-search', {
         method: 'POST',
@@ -564,51 +562,66 @@ export default function Home() {
           isLoading={aiLoading}
         />
         {/* Example prompts popover */}
-        <div className="relative flex justify-center mt-2">
-          <button
-            ref={promptLinkRef}
-            className="text-primary underline text-sm hover:text-primary/80 transition"
-            type="button"
-            onClick={() => setShowPromptPopover((v) => !v)}
+        <AnimatePresence>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative flex justify-center mt-2"
           >
-            example prompts
-          </button>
-          {showPromptPopover && (
-            <>
-              {/* Overlay */}
-              <div
-                className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-                onClick={() => setShowPromptPopover(false)}
-                aria-label="Close example prompts popup"
-              />
-              {/* Centered popup relative to viewport */}
-              <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md rounded-lg bg-white shadow-2xl border border-gray-200 p-6 flex flex-col gap-3">
-                <button
-                  className="absolute top-2 right-2 p-1 rounded hover:bg-muted"
+            <button
+              ref={promptLinkRef}
+              className="text-primary underline text-sm hover:text-primary/80 transition"
+              type="button"
+              onClick={() => setShowPromptPopover((v) => !v)}
+            >
+              example prompts
+            </button>
+            {showPromptPopover && (
+              <>
+                {/* Overlay */}
+                <div
+                  className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
                   onClick={() => setShowPromptPopover(false)}
-                  aria-label="Close"
-                  type="button"
-                >
-                  <X className="h-5 w-5 text-gray-500" />
-                </button>
-                <div className="mb-2 font-semibold text-lg text-center">Example Prompts</div>
-                {examplePrompts.map((prompt) => (
+                  aria-label="Close example prompts popup"
+                />
+                {/* Centered popup relative to viewport */}
+                <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md rounded-lg bg-white shadow-2xl border border-gray-200 p-6 flex flex-col gap-4">
                   <button
-                    key={prompt}
-                    className="text-left px-3 py-2 rounded hover:bg-primary/10 text-sm text-primary border border-primary/20"
+                    className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-muted transition-colors"
+                    onClick={() => setShowPromptPopover(false)}
+                    aria-label="Close"
                     type="button"
-                    onClick={() => {
-                      setAiInputValue(prompt);
-                      setShowPromptPopover(false);
-                    }}
                   >
-                    {prompt}
+                    <X className="h-4 w-4 text-muted-foreground" />
                   </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+                  <div className="text-center space-y-2">
+                    <h3 className="font-semibold text-lg text-foreground">Example Prompts</h3>
+                    <p className="text-sm text-muted-foreground">Click any prompt to apply it to your search</p>
+                  </div>
+                  <div className="space-y-2">
+                    {examplePrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        className="w-full text-left px-4 py-3 rounded-md border border-border bg-background hover:bg-accent hover:border-primary/30 transition-all duration-200 group"
+                        type="button"
+                        onClick={() => {
+                          setAiInputValue(prompt);
+                          setShowPromptPopover(false);
+                        }}
+                      >
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                          {prompt}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
         <AnimatePresence>
           {!manualSearchMode && !hasSearched && (
             <motion.div 
@@ -745,7 +758,12 @@ export default function Home() {
                         <PaginationItem key={p}>
                           <PaginationLink
                             isActive={p === page}
-                            onClick={() => setPage(p as number)}
+                            onClick={() => {
+                              setPage(p as number);
+                              if (alumniListRef.current) {
+                                alumniListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }}
                             aria-current={p === page ? 'page' : undefined}
                             tabIndex={p === page ? -1 : 0}
                             href="#"

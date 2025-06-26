@@ -6,7 +6,7 @@ import ClientLayoutShell from '@/components/client-layout-shell'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Alpha Kappa Psi Alumni Network',
+  title: 'Alumnow',
   description: 'Connecting brothers across generations',
 }
 

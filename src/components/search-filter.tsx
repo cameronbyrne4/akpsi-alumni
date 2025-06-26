@@ -136,6 +136,7 @@ export function SearchFilter({
           selected={selectedCompanies}
           onChange={handleCompanyChange}
           placeholder="Company"
+          label="Companies"
         />
 
         <MultiSelect
@@ -143,6 +144,7 @@ export function SearchFilter({
           selected={selectedRoles}
           onChange={handleRoleChange}
           placeholder="Role"
+          label="Roles"
         />
 
         <MultiSelect
@@ -150,6 +152,7 @@ export function SearchFilter({
           selected={selectedCities}
           onChange={handleCityChange}
           placeholder="City"
+          label="Cities"
         />
 
         <div className="w-[300px] space-y-2">

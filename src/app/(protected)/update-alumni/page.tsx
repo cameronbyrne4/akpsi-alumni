@@ -356,65 +356,77 @@ const EducationForm = ({
   );
 };
 
+// Form-specific type that allows strings for array fields
+type FormAlumni = Omit<Alumni, 'companies' | 'little_brothers' | 'emails' | 'phones' | 'majors' | 'minors' | 'source_sheet'> & {
+  companies: string;
+  little_brothers: string;
+  emails: string;
+  phones: string;
+  majors: string;
+  minors: string;
+  source_sheet: string;
+  career_history: CareerExperience[];
+  education: Education[];
+};
 
 export default function UpdateAlumniPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [alumni, setAlumni] = useState<Alumni | null>(null);
-  const [formData, setFormData] = useState<Alumni>({
+  const [formData, setFormData] = useState<FormAlumni>({
     id: '',
     name: '',
     role: '',
-    companies: [] as string[],
+    companies: '',
     location: '',
     family_branch: '',
     graduation_year: undefined,
     big_brother: '',
-    little_brothers: [] as string[],
+    little_brothers: '',
     linkedin_url: '',
     picture_url: '',
     bio: '',
-    emails: [] as string[],
-    phones: [] as string[],
-    majors: [] as string[],
-    minors: [] as string[],
-    career_history: [] as CareerExperience[],
-    education: [] as Education[],
+    emails: '',
+    phones: '',
+    majors: '',
+    minors: '',
+    career_history: [],
+    education: [],
     has_linkedin: false,
     scraped: false,
     manually_verified: false,
     has_enrichment: false,
-    source_sheet: [] as string[],
+    source_sheet: '',
   });
   const [bigBrotherError, setBigBrotherError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [newAlumniData, setNewAlumniData] = useState<Partial<Alumni>>({
+  const [newAlumniData, setNewAlumniData] = useState<Partial<FormAlumni>>({
     name: '',
     role: '',
-    companies: [] as string[],
+    companies: '',
     location: '',
     family_branch: '',
     graduation_year: undefined,
     big_brother: '',
-    little_brothers: [] as string[],
+    little_brothers: '',
     linkedin_url: '',
     picture_url: '',
     bio: '',
-    emails: [] as string[],
-    phones: [] as string[],
-    majors: [] as string[],
-    minors: [] as string[],
-    career_history: [] as CareerExperience[],
-    education: [] as Education[],
+    emails: '',
+    phones: '',
+    majors: '',
+    minors: '',
+    career_history: [],
+    education: [],
     has_linkedin: false,
     scraped: false,
     manually_verified: false,
     has_enrichment: false,
-    source_sheet: [] as string[],
+    source_sheet: '',
   });
   const [bigBrotherName, setBigBrotherName] = useState<string>('');
   const [allAlumni, setAllAlumni] = useState<Array<{ id: string; name: string }>>([]);
@@ -535,6 +547,7 @@ export default function UpdateAlumniPage() {
           majors: (data.majors || []).join(', '),
           minors: (data.minors || []).join(', '),
           source_sheet: (data.source_sheet || []).join(', '),
+          career_history: data.career_history || [],
         });
         
         // Set the big brother name for display
@@ -613,8 +626,8 @@ export default function UpdateAlumniPage() {
     return true;
   };
 
-  const handleInputChange = async (field: keyof Alumni, value: unknown) => {
-    setFormData((prev: Alumni) => ({ ...prev, [field]: value }));
+  const handleInputChange = async (field: keyof FormAlumni, value: unknown) => {
+    setFormData((prev: FormAlumni) => ({ ...prev, [field]: value }));
 
     if (field === 'big_brother') {
       await validateBigBrother(value as string);
@@ -645,6 +658,10 @@ export default function UpdateAlumniPage() {
       // Helper function to convert string to array for array fields
       const convertToArray = (value: unknown): string[] => {
         if (typeof value === 'string') {
+          // If the string is empty or only whitespace, return empty array
+          if (!value.trim()) {
+            return [];
+          }
           return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
         }
         return value as string[] || [];
@@ -652,7 +669,6 @@ export default function UpdateAlumniPage() {
 
       // Create update object with only changed fields and required fields
       const updateData = {
-        ...formData,
         name: formData.name || alumni.name,
         role: formData.role || alumni.role,
         companies: convertToArray(formData.companies),
@@ -703,6 +719,8 @@ export default function UpdateAlumniPage() {
             majors: (data.majors || []).join(', '),
             minors: (data.minors || []).join(', '),
             source_sheet: (data.source_sheet || []).join(', '),
+            career_history: data.career_history || [],
+            education: data.education || [],
         });
         setBigBrotherName(getNameFromId(data.big_brother ?? null));
       }
@@ -742,26 +760,26 @@ export default function UpdateAlumniPage() {
         id: '',
         name: '',
         role: '',
-        companies: [] as string[],
+        companies: '',
         location: '',
         family_branch: '',
         graduation_year: undefined,
         big_brother: '',
-        little_brothers: [] as string[],
+        little_brothers: '',
         linkedin_url: '',
         picture_url: '',
         bio: '',
-        emails: [] as string[],
-        phones: [] as string[],
-        majors: [] as string[],
-        minors: [] as string[],
-        career_history: [] as CareerExperience[],
-        education: [] as Education[],
+        emails: '',
+        phones: '',
+        majors: '',
+        minors: '',
+        career_history: [],
+        education: [],
         has_linkedin: false,
         scraped: false,
         manually_verified: false,
         has_enrichment: false,
-        source_sheet: [] as string[],
+        source_sheet: '',
       });
       setSearchQuery('');
       setShowDeleteDialog(false);
@@ -789,26 +807,38 @@ export default function UpdateAlumniPage() {
 
     setLoading(true);
     try {
+      // Helper function to convert string to array for array fields
+      const convertToArray = (value: unknown): string[] => {
+        if (typeof value === 'string') {
+          // If the string is empty or only whitespace, return empty array
+          if (!value.trim()) {
+            return [];
+          }
+          return value.split(',').map(item => item.trim()).filter(item => item.length > 0);
+        }
+        return value as string[] || [];
+      };
+
       // Include all required fields and initialize arrays properly
       const createData = {
         name: newAlumniData.name,
         role: newAlumniData.role || '',
-        companies: newAlumniData.companies || [] as string[],
+        companies: convertToArray(newAlumniData.companies),
         location: newAlumniData.location || '',
         family_branch: newAlumniData.family_branch || '',
         graduation_year: newAlumniData.graduation_year,
         big_brother: newAlumniData.big_brother || '',
-        little_brothers: newAlumniData.little_brothers || [] as string[],
+        little_brothers: convertToArray(newAlumniData.little_brothers),
         linkedin_url: newAlumniData.linkedin_url || '',
         picture_url: newAlumniData.picture_url || '',
         bio: newAlumniData.bio || '',
-        emails: newAlumniData.emails || [] as string[],
-        phones: newAlumniData.phones || [] as string[],
-        majors: newAlumniData.majors || [] as string[],
-        minors: newAlumniData.minors || [] as string[],
-        career_history: newAlumniData.career_history || [] as CareerExperience[],
-        education: newAlumniData.education || [] as Education[],
-        source_sheet: newAlumniData.source_sheet || [] as string[],
+        emails: convertToArray(newAlumniData.emails),
+        phones: convertToArray(newAlumniData.phones),
+        majors: convertToArray(newAlumniData.majors),
+        minors: convertToArray(newAlumniData.minors),
+        career_history: newAlumniData.career_history || [],
+        education: newAlumniData.education || [],
+        source_sheet: convertToArray(newAlumniData.source_sheet),
         has_linkedin: newAlumniData.has_linkedin || false,
         scraped: newAlumniData.scraped || false,
         manually_verified: newAlumniData.manually_verified || false,
@@ -837,31 +867,42 @@ export default function UpdateAlumniPage() {
 
       // Reset the form and show the new record
       setAlumni(data);
-      setFormData(data);
+      setFormData({
+        ...data,
+        companies: (data.companies || []).join(', '),
+        little_brothers: (data.little_brothers || []).join(', '),
+        emails: (data.emails || []).join(', '),
+        phones: (data.phones || []).join(', '),
+        majors: (data.majors || []).join(', '),
+        minors: (data.minors || []).join(', '),
+        source_sheet: (data.source_sheet || []).join(', '),
+        career_history: data.career_history || [],
+        education: data.education || [],
+      });
       setIsCreating(false);
       setNewAlumniData({
         name: '',
         role: '',
-        companies: [] as string[],
+        companies: '',
         location: '',
         family_branch: '',
         graduation_year: undefined,
         big_brother: '',
-        little_brothers: [] as string[],
+        little_brothers: '',
         linkedin_url: '',
         picture_url: '',
         bio: '',
-        emails: [] as string[],
-        phones: [] as string[],
-        majors: [] as string[],
-        minors: [] as string[],
-        career_history: [] as CareerExperience[],
-        education: [] as Education[],
+        emails: '',
+        phones: '',
+        majors: '',
+        minors: '',
+        career_history: [],
+        education: [],
         has_linkedin: false,
         scraped: false,
         manually_verified: false,
         has_enrichment: false,
-        source_sheet: [] as string[],
+        source_sheet: '',
       });
     } catch (error) {
       console.error('Error creating alumni:', error);
@@ -907,37 +948,23 @@ export default function UpdateAlumniPage() {
   };
 
   const updateRoleAndCompaniesFromHistory = (history: CareerExperience[]) => {
-    if (!history) return;
-
     const getMostRecentExperience = (h: CareerExperience[]) => {
-      if (!h || h.length === 0) return null;
-
-      const presentJobs = h.filter(exp => exp.end_date === 'Present');
-      if (presentJobs.length > 0) {
-          presentJobs.sort((a, b) => {
-            const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
-            const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
-            return dateB - dateA;
-          });
-          return presentJobs[0];
-      }
-
-      const sortedHistory = [...h].sort((a, b) => {
-          if (!a.end_date || !b.end_date) return 0;
-          return new Date(b.end_date).getTime() - new Date(a.end_date).getTime()
-      });
-      return sortedHistory.length > 0 ? sortedHistory[0] : null;
-    }
+      return h.sort((a, b) => {
+        const aEnd = a.end_date === 'Present' ? new Date() : (a.end_date && a.end_date !== 'Present' ? new Date(a.end_date) : new Date(0));
+        const bEnd = b.end_date === 'Present' ? new Date() : (b.end_date && b.end_date !== 'Present' ? new Date(b.end_date) : new Date(0));
+        return bEnd.getTime() - aEnd.getTime();
+      })[0];
+    };
 
     const latestExperience = getMostRecentExperience(history);
     const latestRole = latestExperience ? latestExperience.title : '';
     const allCompanies = history.length > 0 ? [...new Set(history.map(exp => exp.company_name).filter(Boolean))] : [];
     
-    setFormData((prev: Alumni) => ({
+    setFormData((prev: FormAlumni) => ({
         ...prev,
         career_history: history,
         role: latestRole,
-        companies: allCompanies
+        companies: allCompanies.join(', ')
     }));
   }
 
@@ -1009,26 +1036,26 @@ export default function UpdateAlumniPage() {
                     setNewAlumniData({
                       name: searchQuery,
                       role: '',
-                      companies: [] as string[],
+                      companies: '',
                       location: '',
                       family_branch: '',
                       graduation_year: undefined,
                       big_brother: '',
-                      little_brothers: [] as string[],
+                      little_brothers: '',
                       linkedin_url: '',
                       picture_url: '',
                       bio: '',
-                      emails: [] as string[],
-                      phones: [] as string[],
-                      majors: [] as string[],
-                      minors: [] as string[],
-                      career_history: [] as CareerExperience[],
-                      education: [] as Education[],
+                      emails: '',
+                      phones: '',
+                      majors: '',
+                      minors: '',
+                      career_history: [],
+                      education: [],
                       has_linkedin: false,
                       scraped: false,
                       manually_verified: false,
                       has_enrichment: false,
-                      source_sheet: [] as string[],
+                      source_sheet: '',
                     });
                   }}
                 >
@@ -1104,26 +1131,26 @@ export default function UpdateAlumniPage() {
                     setNewAlumniData({
                       name: '',
                       role: '',
-                      companies: [] as string[],
+                      companies: '',
                       location: '',
                       family_branch: '',
                       graduation_year: undefined,
                       big_brother: '',
-                      little_brothers: [] as string[],
+                      little_brothers: '',
                       linkedin_url: '',
                       picture_url: '',
                       bio: '',
-                      emails: [] as string[],
-                      phones: [] as string[],
-                      majors: [] as string[],
-                      minors: [] as string[],
-                      career_history: [] as CareerExperience[],
-                      education: [] as Education[],
+                      emails: '',
+                      phones: '',
+                      majors: '',
+                      minors: '',
+                      career_history: [],
+                      education: [],
                       has_linkedin: false,
                       scraped: false,
                       manually_verified: false,
                       has_enrichment: false,
-                      source_sheet: [] as string[],
+                      source_sheet: '',
                     });
                   }}
                 >
@@ -1455,13 +1482,15 @@ export default function UpdateAlumniPage() {
                      if (!alumni) return;
                      setFormData({
                        ...alumni,
-                       companies: alumni.companies || [],
-                       little_brothers: alumni.little_brothers || [],
-                       emails: alumni.emails || [],
-                       phones: alumni.phones || [],
-                       majors: alumni.majors || [],
-                       minors: alumni.minors || [],
-                       source_sheet: alumni.source_sheet || [],
+                       companies: (alumni.companies || []).join(', '),
+                       little_brothers: (alumni.little_brothers || []).join(', '),
+                       emails: (alumni.emails || []).join(', '),
+                       phones: (alumni.phones || []).join(', '),
+                       majors: (alumni.majors || []).join(', '),
+                       minors: (alumni.minors || []).join(', '),
+                       source_sheet: (alumni.source_sheet || []).join(', '),
+                       career_history: alumni.career_history || [],
+                       education: alumni.education || [],
                      });
                      setBigBrotherName(getNameFromId(alumni.big_brother ?? null));
                      setBigBrotherError(null);

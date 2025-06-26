@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Check, ChevronsUpDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Command,
   CommandEmpty,
@@ -22,6 +23,7 @@ interface MultiSelectProps {
   selected: string[]
   onChange: (value: string[]) => void
   placeholder: string
+  label: string
   className?: string
 }
 
@@ -30,6 +32,7 @@ export function MultiSelect({
   selected,
   onChange,
   placeholder,
+  label,
   className,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
@@ -111,11 +114,19 @@ export function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn('w-[180px] justify-between', className)}
+          className={cn('w-[180px] flex items-center justify-between', className)}
         >
-          {selected.length === 0
-            ? placeholder
-            : `${selected.length} selected`}
+          <span className="flex items-center gap-2">
+            {label}
+            {selected.length > 0 && (
+              <Badge
+                className="rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 min-w-[1.5em] h-6 flex items-center justify-center text-xs font-bold border-0 shadow-none"
+                variant="default"
+              >
+                {selected.length}
+              </Badge>
+            )}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

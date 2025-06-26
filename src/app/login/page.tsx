@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Get passcode from environment variable
 const ACCESS_PASSCODE = process.env.NEXT_PUBLIC_ACCESS_PASSCODE;
@@ -101,55 +102,103 @@ export default function LoginPage() {
   if (isCheckingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-300">
-        <div className="text-lg">Loading...</div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex items-center gap-3 text-lg text-slate-600"
+        >
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading...</span>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-300">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-8 flex flex-col items-center">
-        {/* App Name/Logo */}
-        <h1 className="text-3xl font-bold mb-2 text-primary">Fraternal Alumni Network</h1>
-        <p className="mb-6 text-slate-500 text-center">Enter passcode to access</p>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md bg-white rounded-xl shadow-xl shadow-blue-400/80 ring-2 ring-blue-300 ring-offset-2 ring-offset-white border border-gray-200/50 p-8 backdrop-blur-sm"
+
+      >
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2 text-primary">Fraternal Alumni Network</h1>
+        </div>
+
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
-          <div className="relative">
-            <input
-              type={showPasscode ? "text" : "password"}
-              placeholder="Enter passcode"
-              value={passcode}
-              onChange={e => setPasscode(e.target.value)}
-              required
-              className="border rounded px-4 py-2 w-full focus:outline-primary text-center text-lg tracking-wider pr-10"
-              autoComplete="off"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPasscode(!showPasscode)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-              tabIndex={-1}
-            >
-              {showPasscode ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
-            </button>
+        <form onSubmit={handleLogin} className="w-full flex flex-col gap-6">
+          <div className="space-y-2">
+            
+            <div className="relative">
+              <input
+                id="passcode"
+                type={showPasscode ? "text" : "password"}
+                placeholder="Enter your code"
+                value={passcode}
+                onChange={e => setPasscode(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 text-center text-lg tracking-wider pr-12 bg-white/80 backdrop-blur-sm"
+                autoComplete="off"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPasscode(!showPasscode)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1 rounded"
+                tabIndex={-1}
+                disabled={loading}
+              >
+                {showPasscode ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
+          
           <button
             type="submit"
-            disabled={loading}
-            className="bg-primary text-white rounded px-4 py-2 font-semibold hover:bg-primary/90 transition"
+            disabled={loading || !passcode.trim()}
+            className="w-full bg-primary text-white rounded-lg px-4 py-3 font-semibold hover:bg-primary/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Verifying..." : "Access"}
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Verifying...</span>
+              </div>
+            ) : (
+              "Access"
+            )}
           </button>
         </form>
+
         {/* Error Message */}
-        {error && <div className="mt-4 text-red-500 text-sm text-center">{error}</div>}
+        <AnimatePresence>
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg"
+            >
+              <div className="text-red-600 text-sm text-center font-medium">{error}</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Footer */}
-        <div className="mt-8 text-xs text-slate-400 text-center w-full">&copy; {new Date().getFullYear()} Fraternal Alumni Network</div>
-      </div>
+        <div className="mt-8 text-center">
+          <p className="text-xs text-slate-400">
+            &copy; {new Date().getFullYear()} Fraternal Alumni Network
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 } 
