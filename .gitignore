@@ -38,3 +38,7 @@ next-env.d.ts
 # Data files (private information)
 /data/raw/
 /data/processed/
+
+# Sensitive alumni data files
+data/alumni_mega_*.json
+data/backups/alumni_backup_*.json
