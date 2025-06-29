@@ -1,6 +1,6 @@
-# AKPsi Alumni Network (FAN)
+# Fraternal Alumni Network (FAN)
 
-A modern, searchable directory of Alpha Kappa Psi alumni that displays career and fraternal information through an intuitive interface. Built with Next.js, Supabase, and AI-powered search capabilities.
+A modern, searchable directory of Alpha Kappa Psi alumni that displays career and fraternal information through an intuitive interface. Hope to replicate it for other fraternies in America, starting with other AKPsi chapters. Built with Next.js, Supabase, and AI-powered search capabilities.
 
 ## 🎯 Overview
 
